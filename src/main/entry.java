@@ -54,11 +54,12 @@ public static long tick = 0;
             while(true)
             {
                 long time=System.nanoTime();
+				tick = time/1000000;
                 if(time>=reg+diff) {
                 try { 
                 	reg = time;
                 	SwingUtilities.invokeAndWait(() ->{
-					app.onTick(tick++);
+					app.onTick();
                     app.repaint(0,0, app.getWidth(), app.getHeight());
                 	});
                 

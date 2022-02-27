@@ -10,8 +10,7 @@ public class Globals {
 	public static final int ASSET_SIZE = 312;
 	public static final int INITIAL_HEIGHT = 720;
 	public static final int INITIAL_WIDTH = 1280;
-	public static final double GRAV_CONST = 5;
-	public static final double JUMP_CONST = 4;
-	public static final boolean SHOWGRID = true;
+	public static final double GRAV_CONST = 9;
+	public static final double JUMP_CONST = 5.2;
 	public static final boolean CLIP = false;
 }
