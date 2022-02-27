@@ -1,14 +1,14 @@
 package main;
 
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.util.*;
 
-public class Peripherals implements ComponentListener, KeyListener {
+import util.Point;
+
+
+public class Peripherals implements ComponentListener, KeyListener, MouseMotionListener {
 	HashMap<Integer, Boolean> keyRegister = new HashMap<Integer, Boolean>();
-	
+	Point MOUSE_POS = new Point(0,0);
 	
 	@Override
 	public void componentResized(ComponentEvent e) {
@@ -54,6 +54,20 @@ public class Peripherals implements ComponentListener, KeyListener {
 	
 	public boolean KeyPressed(int keycode) {
 		return keyRegister.getOrDefault(keycode, false);
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		MOUSE_POS = new Point(e.getX(), e.getY());
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		MOUSE_POS = new Point(e.getX(), e.getY());
+	}
+
+	public Point mousePos(){
+		return MOUSE_POS;
 	}
 
 }

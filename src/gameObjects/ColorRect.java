@@ -17,10 +17,10 @@ public class ColorRect extends GameObject {
 	public void paint(Graphics g, Rect r) {
 		if(!entry.app.colors.containsKey(color)) {
 			g.setColor(Color.RED);
-			g.fillRect((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+			g.fillRect((int)Math.floor(r.getX()), (int)Math.floor(r.getY()), (int)r.getWidth(), (int)r.getHeight());
 		}else {
 			g.setColor(entry.app.colors.get(color));
-			g.fillRect((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+			g.fillRect((int)Math.floor(r.getX()), (int)Math.floor(r.getY()), (int)r.getWidth(), (int)r.getHeight());
 		}
 	}
 

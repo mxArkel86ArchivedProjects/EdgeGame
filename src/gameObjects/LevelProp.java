@@ -19,9 +19,9 @@ public class LevelProp extends GameObject {
 	public void paint(Graphics g, Rect r) {
 		if(!entry.app.assets.containsKey(asset)) {
 			g.setColor(Color.RED);
-			g.fillRect((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+			g.fillRect((int)Math.floor(r.getX()), (int)Math.floor(r.getY()), (int)r.getWidth(), (int)r.getHeight());
 		}else {
-			g.drawImage(entry.app.assets.get(asset), (int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight(), null);
+			g.drawImage(entry.app.assets.get(asset), (int)Math.floor(r.getX()), (int)Math.floor(r.getY()), (int)r.getWidth(), (int)r.getHeight(), null);
 		}
 	}
 

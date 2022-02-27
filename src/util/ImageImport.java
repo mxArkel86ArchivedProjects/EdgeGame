@@ -1,11 +1,14 @@
 package util;
 
 import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import main.Globals;
 import main.entry;
 
 public class ImageImport {
@@ -23,11 +26,21 @@ public class ImageImport {
 		for (final File fileEntry : new File("assets").listFiles()) {
 	        if (fileEntry.isFile()) {
 	           String name = fileEntry.getName().substring(0, fileEntry.getName().indexOf("."));//no file extension
-	           BufferedImage img = getImage(fileEntry.getPath());
+	           BufferedImage img = resize(getImage(fileEntry.getPath()), Globals.ASSET_SIZE, Globals.ASSET_SIZE);
 	           
 	           entry.app.assets.put(name, img);
 	        }
 	    }
 		
 	}
+	public static BufferedImage resize(BufferedImage img, int newW, int newH) { 
+		Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+		BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+	
+		Graphics2D g2d = dimg.createGraphics();
+		g2d.drawImage(tmp, 0, 0, null);
+		g2d.dispose();
+	
+		return dimg;
+	}  
 }

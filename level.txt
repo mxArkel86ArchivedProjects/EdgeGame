@@ -1,4 +1,4 @@
-[collisions]
+[collision]
 #first cave
 22,19,22,35,T
 40,33,40,35,T
@@ -41,7 +41,7 @@ cave4,56,17,75,36,1.001000
 rock1,47,28,53,34,1.001000
 rock2,55,30,59,34,1.001000
 pillar1,45,17,59,36,1.001000
-caveentrance,65,31,69,35,1.00100
+caveentrance,65,31,69,35,1.000
 pillar2,25,17,40,38,1.0100
 pillar2,46,17,57,34,0.8
 #platforms
@@ -82,14 +82,15 @@ cavegraydark,75,58,101,65,0
 black,75,63,111,65,1.00100
 
 
-[colors]
+[color]
 cavegraydark,2f302f
 cavegray,7f7f7f
+black,000000
 
-[checkpoints]
+[checkpoint]
 start,26,35
 
-[resetboxes]
+[resetbox]
 start,75,62,102,65
 
 [imageprops]

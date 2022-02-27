@@ -8,6 +8,7 @@ import java.awt.Color;
 import gameObjects.Collider;
 import gameObjects.ColorRect;
 import gameObjects.LevelProp;
+import gameObjects.ResetBox;
 import main.entry;
 
 public class ConfigImport {
@@ -15,6 +16,7 @@ public class ConfigImport {
         entry.app.colliders.clear();
         entry.app.colors.clear();
         entry.app.objects.clear();
+        entry.app.checkpoints.clear();
 
         BufferedReader reader;
         String category = "";
@@ -38,7 +40,7 @@ public class ConfigImport {
                     continue;
                 
                 String[] args = ln.split(",");
-                if(category.contentEquals("collisions")){
+                if(category.contentEquals("collision")){
                    double x1 = Double.parseDouble(args[0]);
                    double y1 = Double.parseDouble(args[1]);
                    double x2 = Double.parseDouble(args[2]);
@@ -65,13 +67,13 @@ public class ConfigImport {
                     double h = Math.abs(y1-y2);
                     ColorRect c = new ColorRect(x, y, w, h, z, color);
                     entry.app.objects.add(c);
-                 }else if(category.contentEquals("colors")){
+                 }else if(category.contentEquals("color")){
                     String color = args[0];
                     String hex = "#"+ args[1];
 
                     Color c = Color.decode(hex);
                     entry.app.colors.put(color, c);
-                 } if(category.contentEquals("levelprop")){
+                 } else if(category.contentEquals("levelprop")){
                     String name = args[0];
                     double x1 = Double.parseDouble(args[1]);
                     double y1 = Double.parseDouble(args[2]);
@@ -85,10 +87,25 @@ public class ConfigImport {
                     double h = Math.abs(y1-y2);
                     LevelProp c = new LevelProp(x, y, w, h, z, name);
                     entry.app.objects.add(c);
-                 } if(category.contentEquals("checkpoints")){
-                    String color = args[0];
+                 } else if(category.contentEquals("checkpoint")){
+                    String name = args[0];
                     double x1 = Double.parseDouble(args[1]);
                     double y1 = Double.parseDouble(args[2]);
+                    Point p =  new Point(x1, y1);
+                    entry.app.checkpoints.put(name, p);
+                 }else if(category.contentEquals("resetbox")){
+                    String name = args[0];
+                    double x1 = Double.parseDouble(args[1]);
+                    double y1 = Double.parseDouble(args[2]);
+                    double x2 = Double.parseDouble(args[3]);
+                    double y2 = Double.parseDouble(args[4]);
+                    
+                    double x = Math.min(x1, x2);
+                    double y = Math.min(y1, y2);
+                    double w = Math.abs(x1-x2);
+                    double h = Math.abs(y1-y2);
+                    ResetBox b = new ResetBox(x, y, w, h, name);
+                    entry.app.resetboxes.add(b);
                  }
 
 

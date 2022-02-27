@@ -21,12 +21,15 @@ public static long tick = 0;
 		t = new Timer();
 		app = new Application();
 		peripherals = new Peripherals();
-		
-		frame.setSize(new Dimension(1280, 720));
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		app.Init();
-		app.onResize(app.getWidth(), app.getHeight());
+		int h = Globals.INITIAL_HEIGHT;
+		int w = Globals.INITIAL_WIDTH;
+		
+		frame.setSize(new Dimension(w, h));
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		app.Init(w, h);
+		
 		//System.setProperty("sun.java2d.opengl", "true");
 		
 		// t.scheduleAtFixedRate(new TimerTask() {
@@ -42,6 +45,7 @@ public static long tick = 0;
 		
 		frame.addComponentListener(peripherals);
 		frame.addKeyListener(peripherals);
+		app.addMouseMotionListener(peripherals);
 		
 		Thread thread=new Thread(() ->
         {
