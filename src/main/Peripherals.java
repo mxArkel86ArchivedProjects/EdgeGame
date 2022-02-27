@@ -13,6 +13,8 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 	Point MOUSE_POS = new Point(0,0);
 	Point MOUSE_CLICK_POS = new Point(0,0);
 	boolean mouse_click_ = false;
+	String typed_str = "";
+	boolean type_enable = false;
 	
 	@Override
 	public void componentResized(ComponentEvent e) {
@@ -39,8 +41,21 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 
 	@Override
 	public void keyTyped(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
+		if(type_enable)
+		typed_str+=e.getKeyChar();
+	}
+
+	public void typingEnable(boolean b){
+		type_enable = b;
+	}
+
+	public String keysTyped(){
+		String str = typed_str;
+		typed_str = "";
+		return str;
+	}
+	public boolean keysTypedB(){
+		return typed_str.length()>0;
 	}
 
 	@Override

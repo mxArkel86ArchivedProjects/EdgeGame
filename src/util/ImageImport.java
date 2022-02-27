@@ -24,10 +24,14 @@ public class ImageImport {
 	public static void ImportImageAssets() {
 		for (final File fileEntry : new File("assets").listFiles()) {
 	        if (fileEntry.isFile()) {
+				try{
 	           String name = fileEntry.getName().substring(0, fileEntry.getName().indexOf("."));//no file extension
 	           BufferedImage img = resize(getImage(fileEntry.getPath()), Globals.ASSET_SIZE, Globals.ASSET_SIZE);
 	           
 	           entry.app.assets.put(name, img);
+				}catch(Exception e){
+					
+				}
 	        }
 	    }
 		

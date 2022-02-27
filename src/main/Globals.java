@@ -1,15 +1,19 @@
 package main;
 
 public class Globals {
-	public static final int PLAYER_SIZE = 80;
-	public static final double PLAYER_SPEED = 140;
+	public static final double PLAYER_SIZE = 100;
+	public static final double PLAYER_SPEED = 160;
 	public static final double DEBUG_PLAYER_SPEED = 200;
-	public static final int GRIDSIZE = 30;
-	public static final int DEBUG_SCALE = 2;
+	public static final double GRIDSIZE = 40;
+	public static final double DEBUG_SCALE = 1.5;
 	public static final double REFRESH_RATE = 60;
-	public static final int ASSET_SIZE = 312;
+	public static final int ASSET_SIZE = 512;
 	public static final int INITIAL_HEIGHT = 720;
 	public static final int INITIAL_WIDTH = 1280;
 	public static final double GRAV_CONST = 9;
-	public static final double JUMP_CONST = 30;
+	public static final double JUMP_CONST = 34;
+	public static final double SPRINT_DRAIN = 3;
+	public static final double SPRINT_REGEN = 1.5;
+	public static final double SPRINT_DELAY = 1000;
+	public static final double SPRINT_MULT = 1.3;
 }
