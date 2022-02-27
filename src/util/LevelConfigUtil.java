@@ -1,17 +1,53 @@
 package util;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.awt.Color;
 
 import gameObjects.Collider;
 import gameObjects.ColorRect;
+import gameObjects.GameObject;
 import gameObjects.LevelProp;
 import gameObjects.ResetBox;
 import main.entry;
 
-public class ConfigImport {
+public class LevelConfigUtil {
+    public static void saveLevel(){
+        try {
+            
+            BufferedWriter w = new BufferedWriter(new FileWriter("output.txt"));
+            w.write("-=-=-=-= output =-=-=-=-=-\n\n");
+            w.write("[collision]\n");
+            for(Collider c : entry.app.newColliders){
+                w.write(String.format("%d,%d,%d,%d,T\n",(int)c.x, (int)c.y, (int)(c.x+c.width),(int)(c.y+c.height)));
+            }
+            w.write("\n[levelprop]\n");
+            for(GameObject c : entry.app.newObjects){
+                if(c instanceof LevelProp){
+                    LevelProp p = (LevelProp)c;
+                    w.write(String.format("%s,%d,%d,%d,%d,%.3f\n",p.getAsset(), (int)c.x, (int)c.y, (int)(c.x+c.width),(int)(c.y+c.height), p.getZ()));
+                }
+            }
+            w.write("\n[colorrect]\n");
+            for(GameObject c : entry.app.newObjects){
+                if(c instanceof ColorRect){
+                    ColorRect p = (ColorRect)c;
+                    w.write(String.format("%s,%d,%d,%d,%d,%.3f\n",p.getColor(), (int)c.x, (int)c.y, (int)(c.x+c.width),(int)(c.y+c.height), p.getZ()));
+                }
+            }
+
+            entry.app.newColliders.clear();
+            entry.app.newObjects.clear();
+            w.close();
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void loadLevel(){
         entry.app.colliders.clear();
         entry.app.colors.clear();

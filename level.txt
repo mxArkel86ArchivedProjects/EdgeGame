@@ -95,3 +95,13 @@ start,75,62,102,65
 
 [imageprops]
 cave1,0,1,1,0
+
+[collision]
+79,28,89,28,T
+89,19,89,28,T
+
+[levelprop]
+void,79,22,84,28,1.000
+
+[colorrect]
+black,84,21,88,28,1.000

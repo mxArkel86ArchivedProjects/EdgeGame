@@ -26,4 +26,8 @@ public class ColorRect extends GameObject {
 		}
 	}
 
+	public String getColor(){
+		return color;
+	}
+
 }

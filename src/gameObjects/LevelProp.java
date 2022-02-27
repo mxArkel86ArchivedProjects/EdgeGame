@@ -25,4 +25,8 @@ public class LevelProp extends GameObject {
 		}
 	}
 
+	public String getAsset(){
+		return asset;
+	}
+
 }

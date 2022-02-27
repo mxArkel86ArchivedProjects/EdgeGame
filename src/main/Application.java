@@ -5,7 +5,7 @@ import java.awt.Color;
 import util.Rect;
 import util.CollisionReturn;
 import util.CollisionUtil;
-import util.ConfigImport;
+import util.LevelConfigUtil;
 import util.DrawUtil;
 import util.ImageImport;
 import util.Point;
@@ -71,12 +71,13 @@ public class Application extends JPanel {
 	String selectcolor = "black";
 	boolean CLIP = false;
 	boolean clip_toggle = true;
+	boolean save_toggle = true;
 
 	public void Init(int width, int height) {
 		onResize(width, height);
 		ImageImport.ImportImageAssets();
 
-		ConfigImport.loadLevel();
+		LevelConfigUtil.loadLevel();
 
 		if (checkpoints.containsKey("start"))
 			setPlayerPosFromSchem(checkpoints.get("start"));
@@ -369,6 +370,7 @@ public class Application extends JPanel {
 		if (keyPress(KeyEvent.VK_X)) {
 			selectstage = false;
 		}
+		
 		//CHANGE SELECTION TYPE
 		if (keyPress(KeyEvent.VK_Z) && selecttype_toggle) {
 			selecttype_toggle = false;
@@ -378,6 +380,15 @@ public class Application extends JPanel {
 		}
 		if (!keyPress(KeyEvent.VK_Z)) {
 			selecttype_toggle = true;
+		}
+
+		//Save level
+		if (keyPress(KeyEvent.VK_P) && save_toggle) {
+			save_toggle = false;
+			LevelConfigUtil.saveLevel();
+		}
+		if (!keyPress(KeyEvent.VK_P)) {
+			save_toggle = true;
 		}
 
 		//CLIP
