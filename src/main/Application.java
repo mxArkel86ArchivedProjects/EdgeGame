@@ -40,6 +40,8 @@ public class Application extends JPanel {
 	public List<Collider> colliders = new ArrayList<Collider>();
 	public List<GameObject> objects = new ArrayList<GameObject>();
 	public List<ResetBox> resetboxes = new ArrayList<ResetBox>();
+	public List<GameObject> newObjects = new ArrayList<GameObject>();
+	public List<Collider> newColliders = new ArrayList<Collider>();
 
 	public HashMap<String, Point> checkpoints = new HashMap<String, Point>();
 	public HashMap<String, BufferedImage> assets = new HashMap<String, BufferedImage>();
@@ -60,6 +62,15 @@ public class Application extends JPanel {
 	boolean enabled = false;
 	boolean deathscreen = false;
 	long deathscreen_tick = 0;
+	Point select_point_1 = new Point(0, 0);
+	Point select_point_2 = new Point(0, 0);
+	boolean selectstage = false;
+	char selecttype = 0;
+	boolean selecttype_toggle = true;
+	String selectasset = "void";
+	String selectcolor = "black";
+	boolean CLIP = false;
+	boolean clip_toggle = true;
 
 	public void Init(int width, int height) {
 		onResize(width, height);
@@ -90,8 +101,7 @@ public class Application extends JPanel {
 				p.getY() * GRIDSIZE - PLAYER_SCREEN_LOC.getY() - PLAYER_SCREEN_LOC.getHeight() / 2 - 1.5 * GRIDSIZE);
 	}
 
-	Point schemPointFromMouse() {
-		Point p = entry.peripherals.mousePos();
+	Point schemPointFromFramePos(Point p, Point location, double GRIDSIZE) {
 		return new Point(Math.round((p.getX() + location.getX()) / GRIDSIZE),
 				Math.round((p.getY() + location.getY()) / GRIDSIZE));
 	}
@@ -115,7 +125,7 @@ public class Application extends JPanel {
 	@Override
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D) g1;
-		
+
 		Rect LEVEL_SCREEN_SPACE = new Rect(
 				Math.max(0, (TOPLEFT_BOUND.x) * GRIDSIZE - location.x),
 				Math.max(0, (TOPLEFT_BOUND.y) * GRIDSIZE - location.y),
@@ -176,6 +186,14 @@ public class Application extends JPanel {
 				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 		}
 
+		g.setColor(Color.ORANGE);
+		for (Collider o : newColliders) {
+			Rect r = schemToLocal(o, location, GRIDSIZE);
+			
+			if (inScreenSpace(r) && o.visible())
+				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		}
+
 		g.setColor(Color.RED);
 		g.setStroke(new BasicStroke(4));
 
@@ -195,51 +213,98 @@ public class Application extends JPanel {
 			}
 		}
 
+		for (GameObject o : newObjects) {
+				if (o instanceof ColorRect) {
+					Rect r = schemToLocal(o, location, GRIDSIZE);
+					if (inScreenSpace(r))
+						o.paint(g, r);
+				} else if (o instanceof LevelProp) {
+					Rect r = schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
+					if (inScreenSpace(r))
+						o.paint(g, r);
+				}
+		}
+
 		g.setColor(Color.GREEN);
 		g.setStroke(new BasicStroke(2));
 
-		if(DEBUG_){
-		for (ResetBox b : resetboxes) {
-			Rect r = schemToLocal(b, location, GRIDSIZE);
-			if (inScreenSpace(r))
-				g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
-						(int) Math.floor(r.getHeight()));
-		}
-
-		
-		g.setColor(Color.ORANGE);
-		Point mouse = entry.peripherals.mousePos();
-		Point schem_mouse = schemPointFromMouse();
-		int z = 3;
-		g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
-		
-
-		g.setFont(DEBUG_TEXT);
-		g.drawString(
-				String.format("raw=(%.1f,%.1f)  coord=(%.1f,%.1f) grounded=%b component=(%.1f,%.1f) velocity=%.1f", mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded, component_x, component_y, vertical_velocity), 20,
-				g.getFontMetrics().getAscent() + 20);
-
-		g.setStroke(new BasicStroke(6));
-		g.setColor(Color.BLUE);
-		g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
-				(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
+		if (DEBUG_) {
+			for (ResetBox b : resetboxes) {
+				Rect r = schemToLocal(b, location, GRIDSIZE);
+				if (inScreenSpace(r))
+					g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
+							(int) Math.floor(r.getHeight()));
 			}
 
-		if(deathscreen){
-					int a = 255;
-					if(entry.tick-deathscreen_tick>2000)
-						a = 255-(int)Math.min(255,(entry.tick-deathscreen_tick-2000)*255/1000);
-					//System.out.println("out=" + a);
-					g.setFont(DEATHSCREEN_TEXT);
-					g.setColor(new Color(0,0,0,a));
-					g.fillRect(0, 0, this.getWidth(), this.getHeight());
-					g.setStroke(new BasicStroke(2));
-		
-					g.setColor(new Color(255,255,255,a));
-					String str = "Dead";
-					Rectangle2D r2d = g.getFontMetrics().getStringBounds(str, 0, str.length(), g);
-					g.drawString(str, (int)((getWidth()-r2d.getWidth())/2),  (int)((getHeight()+ g.getFontMetrics().getAscent())/2));
-				
+			g.setColor(Color.BLACK);
+			Point mouse = entry.peripherals.mousePos();
+			Point schem_mouse = schemPointFromFramePos(mouse, location, GRIDSIZE);
+			int z = 3;
+			g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
+
+			g.setFont(DEBUG_TEXT);
+			g.drawString(
+					String.format(
+							"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b component=(%3.1f,%3.1f) velocity=%3.1f stype=%d",
+							mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded, component_x, component_y,
+							vertical_velocity, (int) selecttype),
+					20,
+					g.getFontMetrics().getAscent() + 20);
+
+			g.setStroke(new BasicStroke(6));
+			g.setColor(Color.BLUE);
+			g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
+					(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
+
+			if (selectstage == true) {
+				Point p1 = schemToLocalPoint(select_point_1, location, GRIDSIZE);
+				Point p2 = schemToLocalPoint(schemPointFromFramePos(entry.peripherals.mousePos(), location, GRIDSIZE),
+						location, GRIDSIZE);
+				Rect r = new Rect(p1, p2);
+
+				if (selecttype == 0) {
+					g.setColor(Color.RED);
+					g.setStroke(new BasicStroke(4));
+					g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+				} else if (selecttype==1){
+					if (assets.containsKey(selectasset))
+						g.drawImage(assets.get(selectasset), (int) r.getX(), (int) r.getY(), (int) r.getWidth(),
+								(int) r.getHeight(), null);
+					else {
+						g.setColor(Color.RED);
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+					}
+				}else if(selecttype==2){
+					if (colors.containsKey(selectcolor)){
+						g.setColor(colors.get(selectcolor));
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(),
+								(int) r.getHeight());
+					}
+					else {
+						g.setColor(Color.RED);
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+					}
+				}
+			}
+
+		}
+
+		if (deathscreen) {
+			int a = 255;
+			if (entry.tick - deathscreen_tick > 2000)
+				a = 255 - (int) Math.min(255, (entry.tick - deathscreen_tick - 2000) * 255 / 1000);
+			// System.out.println("out=" + a);
+			g.setFont(DEATHSCREEN_TEXT);
+			g.setColor(new Color(0, 0, 0, a));
+			g.fillRect(0, 0, this.getWidth(), this.getHeight());
+			g.setStroke(new BasicStroke(2));
+
+			g.setColor(new Color(255, 255, 255, a));
+			String str = "Dead";
+			Rectangle2D r2d = g.getFontMetrics().getStringBounds(str, 0, str.length(), g);
+			g.drawString(str, (int) ((getWidth() - r2d.getWidth()) / 2),
+					(int) ((getHeight() + g.getFontMetrics().getAscent()) / 2));
+
 		}
 	}
 
@@ -260,16 +325,69 @@ public class Application extends JPanel {
 				r.getHeight() * GRIDSIZE);
 	}
 
+	static Point schemToLocalPoint(Point r, Point location, double GRIDSIZE) {
+		/// multiply by GRIDSIZE, subtract camera location
+		return new Point(r.getX() * GRIDSIZE - location.x, r.getY() * GRIDSIZE - location.y);
+	}
+
 	public void onResize(double width, double height) {
 		PLAYER_SCREEN_LOC = new Rect((width - PLAYERSIZE) / 2, (height - PLAYERSIZE) / 2, PLAYERSIZE, PLAYERSIZE);
 	}
 
 	public void onTick() {
-		if(deathscreen){
-			if(entry.tick>deathscreen_tick+3000){
+		if (deathscreen) {
+			if (entry.tick > deathscreen_tick + 3000) {
 				deathscreen = false;
 			}
 			return;
+		}
+
+		if (entry.peripherals.mouseClicked()) {
+			if (selectstage == false) {
+				select_point_1 = schemPointFromFramePos(entry.peripherals.mouseClickPos(), location, GRIDSIZE);
+				selectstage = true;
+			} else if (selectstage == true) {
+				select_point_2 = schemPointFromFramePos(entry.peripherals.mouseClickPos(), location, GRIDSIZE);
+				selectstage = false;
+				Rect r = new Rect(select_point_1, select_point_2);
+				select_point_1 = new Point(0, 0);
+				select_point_2 = new Point(0, 0);
+
+				if (selecttype == 0) {
+					Collider c = new Collider(r.getX(), r.getY(), r.getWidth(),r.getHeight(), true);
+					newColliders.add(c);
+				}else if(selecttype==1){
+					LevelProp c = new LevelProp(r.getX(), r.getY(), r.getWidth(),r.getHeight(), 1.0f, selectasset);
+					newObjects.add(c);
+				}else if(selecttype==2){
+					ColorRect c = new ColorRect(r.getX(), r.getY(), r.getWidth(),r.getHeight(), 1.0f, selectcolor);
+					newObjects.add(c);
+				}
+			}
+		}
+		//CLEAR SELECTION
+		if (keyPress(KeyEvent.VK_X)) {
+			selectstage = false;
+		}
+		//CHANGE SELECTION TYPE
+		if (keyPress(KeyEvent.VK_Z) && selecttype_toggle) {
+			selecttype_toggle = false;
+			selecttype++;
+			if (selecttype > 2)
+				selecttype = 0;
+		}
+		if (!keyPress(KeyEvent.VK_Z)) {
+			selecttype_toggle = true;
+		}
+
+		//CLIP
+		if (keyPress(KeyEvent.VK_C) && clip_toggle) {
+			clip_toggle = false;
+			CLIP = !CLIP;
+			vertical_velocity = 0;
+		}
+		if (!keyPress(KeyEvent.VK_C)) {
+			clip_toggle = true;
 		}
 
 		if (keyPress(KeyEvent.VK_O) && gridsize_toggle) {
@@ -297,12 +415,12 @@ public class Application extends JPanel {
 			}
 			onResize(getWidth(), getHeight());
 		}
-		
+
 		if (!keyPress(KeyEvent.VK_O))
 			gridsize_toggle = true;
 
-			component_x = 0;
-			component_y = 0;
+		component_x = 0;
+		component_y = 0;
 
 		int intent_x = 0;
 		int intent_y = 0;
@@ -317,47 +435,47 @@ public class Application extends JPanel {
 
 		if (!(intent_x == 0 && intent_y == 0)) {
 			double angle = Math.atan2(intent_y, intent_x);
-			if (Globals.CLIP){
-			component_x = PLAYER_SPEED / Globals.REFRESH_RATE * Math.cos(angle);
-			component_y = PLAYER_SPEED / Globals.REFRESH_RATE * Math.sin(angle);
-			}else{
-				component_x = PLAYER_SPEED*intent_x/Globals.REFRESH_RATE;
+			if (CLIP) {
+				component_x = PLAYER_SPEED / Globals.REFRESH_RATE * Math.cos(angle);
+				component_y = PLAYER_SPEED / Globals.REFRESH_RATE * Math.sin(angle);
+			} else {
+				component_x = PLAYER_SPEED * intent_x / Globals.REFRESH_RATE;
 			}
 		}
 
-		if (!Globals.CLIP) {
+		if (!CLIP) {
 			vertical_velocity -= Globals.GRAV_CONST / Globals.REFRESH_RATE;
 			component_y += vertical_velocity;
 
 			grounded = false;
 
 			double max_disp = 0;
-			
-			for(Collider c : colliders){
+
+			for (Collider c : colliders) {
 				Rect r = schemToLocal(c, location, GRIDSIZE);
 				CollisionReturn ret = CollisionUtil.DynamicCollision(PLAYER_SCREEN_LOC, r, component_x, component_y);
-				if(ret.y_collision){
-					if(ret.intent_y==-1){
+				if (ret.y_collision) {
+					if (ret.intent_y == -1) {
 						grounded = true;
-					if(ret.disp_y>max_disp)
-					max_disp = ret.disp_y;
-					}else{
+						if (ret.disp_y > max_disp)
+							max_disp = ret.disp_y;
+					} else {
 						vertical_velocity = 0;
 					}
 				}
-				if(ret.x_collision){
+				if (ret.x_collision) {
 					component_x = 0;
 				}
 			}
 
-			if(grounded){
+			if (grounded) {
 				component_y = max_disp;
-				if(keyPress(KeyEvent.VK_W))
-					vertical_velocity = Globals.JUMP_CONST;
+				if (keyPress(KeyEvent.VK_W))
+					vertical_velocity = Globals.JUMP_CONST * 10.0f / Globals.REFRESH_RATE;
 				else
-				vertical_velocity = 0;
+					vertical_velocity = 0;
 			}
-			
+
 		}
 
 		for (ResetBox b : resetboxes) {

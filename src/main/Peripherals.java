@@ -3,12 +3,16 @@ package main;
 import java.awt.event.*;
 import java.util.*;
 
+import javax.swing.event.MouseInputListener;
+
 import util.Point;
 
 
-public class Peripherals implements ComponentListener, KeyListener, MouseMotionListener {
+public class Peripherals implements ComponentListener, KeyListener, MouseInputListener {
 	HashMap<Integer, Boolean> keyRegister = new HashMap<Integer, Boolean>();
 	Point MOUSE_POS = new Point(0,0);
+	Point MOUSE_CLICK_POS = new Point(0,0);
+	boolean mouse_click_ = false;
 	
 	@Override
 	public void componentResized(ComponentEvent e) {
@@ -68,6 +72,44 @@ public class Peripherals implements ComponentListener, KeyListener, MouseMotionL
 
 	public Point mousePos(){
 		return MOUSE_POS;
+	}
+
+	public Point mouseClickPos(){
+		mouse_click_ = false;
+		return MOUSE_CLICK_POS;
+	}
+	public boolean mouseClicked(){
+		return mouse_click_;
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		mouse_click_ = true;
+		MOUSE_CLICK_POS = new Point(e.getX(), e.getY());
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

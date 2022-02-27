@@ -11,6 +11,12 @@ public class Rect {
 		this.width = width;
 		this.height = height;
 	}
+	public Rect(Point p1, Point p2){
+		this.x = Math.min(p1.x, p2.x);
+        this.y = Math.min(p1.y, p2.y);
+        this.width = Math.abs(p1.x-p2.x);
+        this.height = Math.abs(p1.y-p2.y);
+	}
 	public double getX() {
 		return x;
 	}

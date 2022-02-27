@@ -22,12 +22,12 @@ public class CollisionUtil {
 		Point top_left = new Point(a.getX(), a.getY());
 		Point top_right =  new Point((a.getX()+a.getWidth()), a.getY());
 		Point bottom_right =  new Point((a.getX()+a.getWidth()), (a.getY()+a.getHeight()));
-		Point bottom_left =  new Point(a.getX(), (a.getY()+a.getHeight()));
+		//Point bottom_left =  new Point(a.getX(), (a.getY()+a.getHeight()));
 
 		Point object_bottom_left = new Point(b.getX(), (b.getY()+b.getHeight()));
 		Point object_bottom_right = new Point((b.getX()+b.getWidth()), (b.getY()+b.getHeight()));
 		Point object_top_left = new Point(b.getX(), b.getY());
-		Point object_top_right =  new Point((b.getX()+b.getWidth()), b.getY());
+		//Point object_top_right =  new Point((b.getX()+b.getWidth()), b.getY());
 
 		boolean left_intersect = top_right.getX() >= object_bottom_left.getX() && top_left.getX() < object_bottom_left.getX();
 		boolean right_intersect = top_left.getX() <= object_bottom_right.getX() && top_right.getX() > object_bottom_right.getX();

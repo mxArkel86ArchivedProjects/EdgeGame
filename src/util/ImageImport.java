@@ -17,7 +17,6 @@ public class ImageImport {
 			BufferedImage image = ImageIO.read(new File(path));
 			return image;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
