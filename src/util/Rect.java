@@ -1,10 +1,10 @@
 package util;
 
 public class Rect {
-	protected double x;
-	protected double y;
-	protected double width;
-	protected double height;
+	public double x;
+	public double y;
+	public double width;
+	public double height;
 	public Rect(double x, double y, double width, double height){
 		this.x = x;
 		this.y = y;

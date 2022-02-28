@@ -1,7 +1,8 @@
 package main;
 
 public class Globals {
-	public static final double PLAYER_SIZE = 100;
+	public static final double PLAYER_WIDTH = 60;
+	public static final double PLAYER_HEIGHT = 100;
 	public static final double PLAYER_SPEED = 160;
 	public static final double DEBUG_PLAYER_SPEED = 200;
 	public static final double GRIDSIZE = 40;
@@ -16,4 +17,9 @@ public class Globals {
 	public static final double SPRINT_REGEN = 1.5;
 	public static final double SPRINT_DELAY = 1000;
 	public static final double SPRINT_MULT = 1.3;
+	public static final double ARM_VERTICAL_DISP = 0.4;
+	public static final double BULLET_DEFAULT_DISTANCE = 60;
+	public static final double BULLET_SIZE = 20;
+	public static final double BULLET_SPEED = 20;
+	public static final double BULLET_MAX_DISTANCE = 80;
 }

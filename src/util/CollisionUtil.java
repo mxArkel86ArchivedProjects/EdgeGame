@@ -1,7 +1,7 @@
 package util;
 
 public class CollisionUtil {
-	public static CollisionReturn DynamicCollision(Rect a, Rect b, double dx, double dy) {
+	private static CollisionReturn CollisionRaw(Rect a, Rect b, double dx, double dy){
 		CollisionReturn ret = new CollisionReturn();
 
 		int intent_x = 0;
@@ -123,6 +123,19 @@ public class CollisionUtil {
 			}
 			return ret;
 		}
+		return ret;
+	}
+	public static CollisionReturn DynamicCollision(Rect a, Rect b, double dx, double dy) {
+		CollisionReturn retx = CollisionRaw(a, b, dx, 0);
+		CollisionReturn rety = CollisionRaw(a, b, 0, dy);
+
+		CollisionReturn ret = new CollisionReturn();
+		ret.disp_x = retx.disp_x;
+		ret.disp_y = rety.disp_y;
+		ret.intent_x = retx.intent_x;
+		ret.intent_y = rety.intent_y;
+		ret.x_collision = retx.x_collision;
+		ret.y_collision = rety.y_collision;
 		return ret;
 	}
 
