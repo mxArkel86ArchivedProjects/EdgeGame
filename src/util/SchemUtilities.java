@@ -23,5 +23,10 @@ public class SchemUtilities {
     					+ PLAYER_SCREEN_LOC.getHeight());
     	return new Rect(p.x, p.y, r.getWidth() * GRIDSIZE, r.getHeight() * GRIDSIZE);
     }
+
+    public static Point schemPointFromFramePos(Point p, Point location, double GRIDSIZE) {
+    	return new Point(Math.round((p.getX() + location.getX()) / GRIDSIZE),
+    			Math.round((p.getY() + location.getY()) / GRIDSIZE));
+    }
     
 }
