@@ -10,6 +10,7 @@ import util.Point;
 
 public class Peripherals implements ComponentListener, KeyListener, MouseInputListener {
 	HashMap<Integer, Boolean> keyRegister = new HashMap<Integer, Boolean>();
+	HashMap<Integer, Boolean> keyToggleRegister = new HashMap<Integer, Boolean>();
 	Point MOUSE_POS = new Point(0,0);
 	String typed_str = "";
 	boolean type_enable = false;
@@ -71,6 +72,21 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 	
 	public boolean KeyPressed(int keycode) {
 		return keyRegister.getOrDefault(keycode, false);
+	}
+
+	public boolean KeyToggled(int keycode){
+		boolean b = keyRegister.getOrDefault(keycode, false);
+		boolean b_toggle = keyToggleRegister.getOrDefault(keycode, false);
+		if(b){
+			if(b_toggle){
+				keyToggleRegister.put(keycode, false);
+				return true;
+			}else
+			return false;
+		}else{
+			keyToggleRegister.put(keycode, true);
+			return false;
+		}
 	}
 
 	@Override

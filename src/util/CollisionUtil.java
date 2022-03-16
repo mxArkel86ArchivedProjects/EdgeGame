@@ -4,17 +4,12 @@ public class CollisionUtil {
 	private static CollisionReturn CollisionRaw(Rect a, Rect b, double dx, double dy){
 		CollisionReturn ret = new CollisionReturn();
 
-		int intent_x = 0;
-		if(dx>0.01)
-			intent_x = 1;
-		else if(dx<-0.01)
-			intent_x = -1;
-		
-		int intent_y = 0;
-		if(dy>0.01)
-			intent_y = 1;
-		else if(dy<-0.01)
-			intent_y = -1;
+		int intent_x = (int)Math.copySign(1, dx);
+		if(dx==0)
+			intent_x = 0;
+		int intent_y = (int)Math.copySign(1, dy);
+		if(dy==0)
+			intent_y = 0;
 
 		ret.intent_x = intent_x;
 		ret.intent_y = intent_y;
@@ -71,7 +66,7 @@ public class CollisionUtil {
 			}
 			if ((inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth())) {
 				ret.x_collision = true;
-				ret.disp_x = Math.floor(a.getX() - (b.getX()+b.getWidth()));
+				ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
 			}
 			return ret;
 		}
@@ -91,7 +86,7 @@ public class CollisionUtil {
 			}
 			if ((inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth())) {
 				ret.x_collision = true;
-				ret.disp_x = Math.floor(a.getX() - (b.getX()+b.getWidth()));
+				ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
 			}
 			return ret;
 		}
@@ -99,7 +94,7 @@ public class CollisionUtil {
 			// check if object is valid before move
 			if ((inline_y || pass_by_x) && (a.getY()+a.getHeight()) <= b.getY() && (a.getY()+a.getHeight()) - dy > b.getY()) {
 				ret.y_collision = true;
-				ret.disp_y = Math.floor(b.getY() - (a.getY()+a.getHeight()));
+				ret.disp_y = Math.ceil((a.getY()+a.getHeight())-b.getY());
 			}
 			return ret;
 		}
@@ -126,17 +121,17 @@ public class CollisionUtil {
 		return ret;
 	}
 	public static CollisionReturn DynamicCollision(Rect a, Rect b, double dx, double dy) {
-		CollisionReturn retx = CollisionRaw(a, b, dx, 0);
-		CollisionReturn rety = CollisionRaw(a, b, 0, dy);
+		// CollisionReturn retx = CollisionRaw(a, b, dx, 0);
+		// CollisionReturn rety = CollisionRaw(a, b, 0, dy);
 
-		CollisionReturn ret = new CollisionReturn();
-		ret.disp_x = retx.disp_x;
-		ret.disp_y = rety.disp_y;
-		ret.intent_x = retx.intent_x;
-		ret.intent_y = rety.intent_y;
-		ret.x_collision = retx.x_collision;
-		ret.y_collision = rety.y_collision;
-		return ret;
+		// CollisionReturn ret = new CollisionReturn();
+		// ret.disp_x = retx.disp_x;
+		// ret.disp_y = rety.disp_y;
+		// ret.intent_x = retx.intent_x;
+		// ret.intent_y = rety.intent_y;
+		// ret.x_collision = retx.x_collision;
+		// ret.y_collision = rety.y_collision;
+		return CollisionRaw(a, b, dx, dy);
 	}
 
 	public static boolean staticCollision(Rect a, Rect b) {

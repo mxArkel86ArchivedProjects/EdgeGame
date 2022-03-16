@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.awt.Color;
 import util.Rect;
 import util.SchemUtilities;
+import util.ScreenAnimation;
 import util.CollisionReturn;
 import util.CollisionUtil;
 import util.LevelConfigUtil;
@@ -50,42 +51,44 @@ public class Application extends JPanel {
 	public HashMap<String, BufferedImage> assets = new HashMap<String, BufferedImage>();
 	public HashMap<String, Color> colors = new HashMap<String, Color>();
 
-	Font DEATHSCREEN_TEXT = new Font("Arial", Font.BOLD, 48);
+	
 	Font DEBUG_TEXT = new Font("Arial", Font.PLAIN, 12);
 	Font UI_TEXT = new Font("Arial", Font.PLAIN, 28);
 
+	// ADJUSTABLE GAME CONSTANTS
 	double GRIDSIZE = Globals.GRIDSIZE;
 	double PLAYER_WIDTH = Globals.PLAYER_WIDTH;
 	double PLAYER_HEIGHT = Globals.PLAYER_HEIGHT;
 	double PLAYER_SPEED = Globals.PLAYER_SPEED;
+	boolean DEBUG_ = false;
+	boolean CLIP = false;
 
+	// PLAYER PARAMETERS
+	int extra_jumps = 0;
 	double vertical_velocity = 0;
 	boolean grounded = false;
-	boolean gridsize_toggle = true;
-	boolean DEBUG_ = false;
-	double component_x = 0;
-	double component_y = 0;
-	boolean enabled = false;
-	boolean deathscreen = false;
-	long deathscreen_tick = 0;
-	Point select_point_1 = new Point(0, 0);
-	Point select_point_2 = new Point(0, 0);
-	boolean selectstage = false;
+	int dash_count = 0;	
+	int facing = 0;
+	double sprint_val = 1;
+	
+	// SELECTORS
 	char selecttype = 0;
 	String selectasset = "void";
 	String selectcolor = "black";
-	boolean CLIP = false;
+	Point select_point_1 = new Point(0, 0);
+	Point select_point_2 = new Point(0, 0);
+
+	
+	boolean deathscreen = false;
+	boolean selectstage = false;
 	boolean typing = false;
 	String typing_str = "";
-	double sprint = 100;
+	
+	boolean animation = false;
+	long animation_tick = 0;
+	long animation_time = 3000;
 	long sprint_tick = 0;
-
-	boolean clip_toggle = true;
-	boolean save_toggle = true;
-	boolean type_toggle = true;
-	boolean enter_toggle = true;
-	boolean backspace_toggle = true;
-	boolean selecttype_toggle = true;
+	long dash_tick = 0;
 
 	public void Init(int width, int height) {
 		// update UI to use new width and height
@@ -253,7 +256,7 @@ public class Application extends JPanel {
 		g.setColor(Color.RED);
 		g.fillRect(20, getHeight() - 60, 200, 10);
 		g.setColor(Color.YELLOW);
-		g.fillRect(20, getHeight() - 40, (int) (200 * sprint / 100), 10);
+		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
 
 		g.setStroke(new BasicStroke(2));
 		g.setColor(Color.BLACK);
@@ -284,8 +287,8 @@ public class Application extends JPanel {
 				focus = selectcolor;
 			g.drawString(
 					String.format(
-							"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b component=(%3.1f,%3.1f) velocity=%3.1f stype=%d typing=%b focus=[%s]",
-							mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded, component_x, component_y,
+							"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s]",
+							mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
 							vertical_velocity, (int) selecttype, typing, focus),
 					20,
 					g.getFontMetrics().getAscent() + 20);
@@ -337,21 +340,7 @@ public class Application extends JPanel {
 
 		// draw deathscreen
 		if (deathscreen) {
-			int a = 255;
-			if (entry.tick - deathscreen_tick > 2000)
-				a = 255 - (int) Math.min(255, (entry.tick - deathscreen_tick - 2000) * 255 / 1000);
-			// System.out.println("out=" + a);
-			g.setFont(DEATHSCREEN_TEXT);
-			g.setColor(new Color(0, 0, 0, a));
-			g.fillRect(0, 0, this.getWidth(), this.getHeight());
-			g.setStroke(new BasicStroke(2));
-
-			g.setColor(new Color(255, 255, 255, a));
-			String str = "Dead";
-			Rectangle2D r2d = g.getFontMetrics().getStringBounds(str, 0, str.length(), g);
-			g.drawString(str, (int) ((getWidth() - r2d.getWidth()) / 2),
-					(int) ((getHeight() + g.getFontMetrics().getAscent()) / 2));
-
+			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
 		}
 	}
 
@@ -400,10 +389,9 @@ public class Application extends JPanel {
 		}
 	}
 
-	void keyEvents(boolean essentials, boolean typing, boolean game) {
+	void inputUpdate(boolean essentials, boolean typing, boolean game) {
 		if (essentials) {
-			if (keyPress(KeyEvent.VK_O) && gridsize_toggle) {
-				gridsize_toggle = false;
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_O)) {
 				if (GRIDSIZE == Globals.GRIDSIZE) {
 					GRIDSIZE = Globals.GRIDSIZE / Globals.DEBUG_SCALE;
 					PLAYER_WIDTH = Globals.PLAYER_WIDTH / Globals.DEBUG_SCALE;
@@ -433,24 +421,16 @@ public class Application extends JPanel {
 				}
 				onResize(getWidth(), getHeight());
 			}
-
-			if (!keyPress(KeyEvent.VK_O))
-				gridsize_toggle = true;
 		}
 		if (typing) {
-			if (keyPress(KeyEvent.VK_ALT) && type_toggle) {
-				type_toggle = false;
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_ALT)) {
 				typing = !typing;
 				if (!typing)
 					typing_str = "";
 				entry.peripherals.typingEnable(typing);
 			}
-			if (!keyPress(KeyEvent.VK_ALT)) {
-				type_toggle = true;
-			}
 
-			if (keyPress(KeyEvent.VK_ENTER) && enter_toggle) {
-				enter_toggle = false;
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_ENTER)) {
 				if (typing && typing_str.length() > 0) {
 					typing = false;
 					typing_str = typing_str.strip();
@@ -463,72 +443,89 @@ public class Application extends JPanel {
 					entry.peripherals.typingEnable(false);
 				}
 			}
-			if (!keyPress(KeyEvent.VK_ENTER)) {
-				enter_toggle = true;
-			}
-			if (keyPress(KeyEvent.VK_CONTROL) && backspace_toggle) {
-				backspace_toggle = false;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_CONTROL)) {
 				if (typing && typing_str.length() > 0) {
 					typing_str = typing_str.substring(0, typing_str.length() - 1);
 				}
 			}
-			if (!keyPress(KeyEvent.VK_CONTROL)) {
-				backspace_toggle = true;
-			}
 		}
 		if (game) {
-			if (keyPress(KeyEvent.VK_X)) {
+			int facing_ = (int) Math.copySign(1, entry.peripherals.mousePos().x - PLAYER_SCREEN_LOC.x);
+			if(facing_!=0)
+				facing = facing_;
+
+			intent_x = 0;
+			intent_y = 0;
+
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_W))
+				intent_y++;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_S))
+				intent_y--;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_D))
+				intent_x++;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_A))
+				intent_x--;
+
+
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_X)) {
 				selectstage = false;
 			}
 
 			// CHANGE SELECTION TYPE
-			if (keyPress(KeyEvent.VK_Z) && selecttype_toggle) {
-				selecttype_toggle = false;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_B)) {
 				selecttype++;
 				if (selecttype > 2)
 					selecttype = 0;
 			}
-			if (!keyPress(KeyEvent.VK_Z)) {
-				selecttype_toggle = true;
+
+			// dash key event
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_Z)) {
+				//dash_toggle = false;
+				if (dash_count > 0) {
+					dash_count--;
+					dash_tick = entry.tick;
+					animation = true;
+				}
+			}
+			// if (!entry.peripherals.KeyPressed(KeyEvent.VK_Z)) {
+			// 	dash_toggle = true;
+			// }
+
+			// sprint
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_SHIFT)) {
+				sprint = true;
+				if (sprint_val > 0)
+					sprint_val -= Globals.SPRINT_DRAIN / Globals.REFRESH_RATE;
+				sprint_tick = entry.tick;
+			} else {
+				sprint = false;
+				if (sprint_tick + Globals.SPRINT_DELAY < entry.tick && sprint_val != 1) {
+					if (sprint_val + Globals.SPRINT_REGEN / Globals.REFRESH_RATE > 1)
+						sprint_val = 1;
+					else
+						sprint_val += Globals.SPRINT_REGEN / Globals.REFRESH_RATE;
+				}
 			}
 
 			// Save level
-			if (keyPress(KeyEvent.VK_P) && save_toggle) {
-				save_toggle = false;
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_P)) {
 				LevelConfigUtil.saveLevel();
-			}
-			if (!keyPress(KeyEvent.VK_P)) {
-				save_toggle = true;
 			}
 
 			// CLIP
-			if (keyPress(KeyEvent.VK_C) && clip_toggle) {
-				clip_toggle = false;
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_C)) {
 				CLIP = !CLIP;
 				vertical_velocity = 0;
-			}
-			if (!keyPress(KeyEvent.VK_C)) {
-				clip_toggle = true;
 			}
 		}
 	}
 
 	public void colliderCode() {
-		component_x = 0;
-		component_y = 0;
+		double component_x = 0;
+		double component_y = 0;
 
-		int intent_x = 0;
-		int intent_y = 0;
 		double SPRINT = 1;
-		if (keyPress(KeyEvent.VK_W))
-			intent_y++;
-		if (keyPress(KeyEvent.VK_S))
-			intent_y--;
-		if (keyPress(KeyEvent.VK_D))
-			intent_x++;
-		if (keyPress(KeyEvent.VK_A))
-			intent_x--;
-		if (keyPress(KeyEvent.VK_SHIFT) && sprint > 20)
+		if (sprint && sprint_val > 0.2)
 			SPRINT = Globals.SPRINT_MULT;
 
 		double speed = PLAYER_SPEED * SPRINT / Globals.REFRESH_RATE;
@@ -539,6 +536,9 @@ public class Application extends JPanel {
 				component_y = speed * Math.sin(angle);
 			} else {
 				component_x = speed * intent_x;
+				if(intent_y ==-1 && Math.abs(vertical_velocity)<Globals.DROP_SPEED/Globals.REFRESH_RATE){
+					vertical_velocity = -Globals.DROP_SPEED/Globals.REFRESH_RATE;
+				}
 			}
 		}
 
@@ -549,7 +549,7 @@ public class Application extends JPanel {
 			grounded = false;
 		}
 
-		double max_disp = 0;
+		double min_disp = Double.MAX_VALUE;
 
 		for (Collider c : colliders) {
 			Rect r = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
@@ -560,8 +560,8 @@ public class Application extends JPanel {
 				if (ret.y_collision) {
 					if (ret.intent_y == -1) {
 						grounded = true;
-						if (ret.disp_y > max_disp)
-							max_disp = ret.disp_y;
+						if (Math.abs(ret.disp_y) < Math.abs(min_disp))
+							min_disp = ret.disp_y;
 					} else {
 						vertical_velocity = 0;
 					}
@@ -589,25 +589,17 @@ public class Application extends JPanel {
 		}
 
 		if (grounded) {
-			component_y = -max_disp;
-			if(keyPress(KeyEvent.VK_H)){
-				System.out.println(max_disp);
-			}
-			if (keyPress(KeyEvent.VK_W))
-				vertical_velocity = Globals.JUMP_CONST * 10.0f / Globals.REFRESH_RATE;
-			else
-				vertical_velocity = 0;
+			if(min_disp!=Double.MAX_VALUE)
+				component_y = min_disp;
+			vertical_velocity = 0;
+			extra_jumps = Globals.EXTRA_JUMPS;
+			dash_count = Globals.DASH_COUNT;
 		}
-		if (keyPress(KeyEvent.VK_SHIFT)) {
-			if (sprint > 0)
-				sprint -= Globals.SPRINT_DRAIN * 10.0 / Globals.REFRESH_RATE;
-			sprint_tick = entry.tick;
-		} else {
-			if (sprint_tick + Globals.SPRINT_DELAY < entry.tick && sprint != 100) {
-				if (sprint + Globals.SPRINT_REGEN * 10.0 / Globals.REFRESH_RATE > 100)
-					sprint = 100;
-				else
-					sprint += Globals.SPRINT_REGEN * 10.0 / Globals.REFRESH_RATE;
+		if (entry.peripherals.KeyPressed(KeyEvent.VK_W)) {
+			if (grounded || extra_jumps > 0) {
+				if (!grounded)
+					extra_jumps--;
+				vertical_velocity = Globals.JUMP_CONST * 10.0f / Globals.REFRESH_RATE;
 			}
 		}
 
@@ -615,15 +607,45 @@ public class Application extends JPanel {
 		location.y -= component_y;
 	}
 
+	public CollisionReturn playerCollision(double x, double y) {
+		CollisionReturn ret1 = null;
+		for (Collider c : colliders) {
+			Rect r = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
+
+			CollisionReturn ret = CollisionUtil.DynamicCollision(PLAYER_SCREEN_LOC, r, x, y);
+			if(ret.x_collision || ret.y_collision){
+				if(ret1==null)
+					ret1 = ret;
+				else{
+					if (ret.x_collision) {
+						if(Math.abs(ret.disp_x)>Math.abs(ret1.disp_x))
+							ret1.disp_x = ret.disp_x;
+					}
+					if(ret.y_collision){
+						if(Math.abs(ret.disp_y)>Math.abs(ret1.disp_y))
+						ret1.disp_y = ret.disp_y;
+					}
+				}
+			}
+			
+			
+		}
+		return ret1;
+	}
+
+	int intent_x = 0;
+	int intent_y = 0;
+	boolean sprint = false;
 	// TICK EVENT
 	public void onTick() {
-		// show deathscreen for 3 seconds
-		if (deathscreen) {
-			if (entry.tick > deathscreen_tick + 3000) {
-				deathscreen = false;
-			}
+		inputUpdate(true, typing, true);
+
+		deathscreen = ScreenAnimation.DeathScreen_Enabled(animation_tick);
+		
+		// If an animation is playing
+		//   skip whatever else should be happening
+		if(deathscreen)
 			return;
-		}
 		// "pause" game while command is being typed
 		if (typing) {
 			if (entry.peripherals.keysTypedB()) {
@@ -632,18 +654,35 @@ public class Application extends JPanel {
 			return;
 		}
 
-		keyEvents(true, typing, true);
-
-		colliderCode();
+		if (animation) {
+			if (entry.tick - dash_tick < Globals.DASH_DURATION) {
+				vertical_velocity = 0;
+				double step_x = Globals.DASH_STEP / Globals.REFRESH_RATE*intent_x;
+				double step_y = Globals.DASH_STEP / Globals.REFRESH_RATE*intent_y;
+				CollisionReturn collided = playerCollision(step_x, step_y);
+				if (collided == null) {
+					location.x += step_x;
+					location.y -= step_y;
+				} else {
+					location.x += collided.disp_x;
+					location.y -= collided.disp_y;
+					dash_tick = 0;
+					animation = false;
+				}
+				return;
+			}
+			animation = false;
+		} else {
+			colliderCode();
+		}
 
 		for (ResetBox b : resetboxes) {
 			Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
 			boolean res = CollisionUtil.staticCollision(PLAYER_SCREEN_LOC, r);
 			if (res) {
 				vertical_velocity = 0;
-				component_y = 0;
 				deathscreen = true;
-				deathscreen_tick = entry.tick;
+				animation_tick = entry.tick;
 				setPlayerPosFromSchem(checkpoints.get(b.checkpoint));
 			}
 		}
@@ -692,10 +731,6 @@ public class Application extends JPanel {
 			if (o.getY() + o.getHeight() > BOTTOMRIGHT_BOUND.y)
 				BOTTOMRIGHT_BOUND.y = o.getY() + o.getHeight();
 		}
-	}
-
-	boolean keyPress(int i) {
-		return entry.peripherals.KeyPressed(i);
 	}
 
 	boolean inScreenSpace(Rect r) {
