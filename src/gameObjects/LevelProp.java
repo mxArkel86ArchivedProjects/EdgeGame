@@ -4,7 +4,6 @@ import java.awt.Graphics;
 import main.entry;
 import util.Rect;
 
-import java.awt.image.BufferedImage;
 import java.awt.Color;
 
 public class LevelProp extends GameObject {

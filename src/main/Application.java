@@ -10,12 +10,15 @@ import util.CollisionUtil;
 import util.LevelConfigUtil;
 import util.MathUtil;
 import util.DrawUtil;
+import util.ImageDuo;
 import util.ImageImport;
 import util.Point;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,8 +43,8 @@ public class Application extends JPanel {
 	Point location = new Point(0, 0);
 
 	/*
-	* GAME OBJECTS
-	*/
+	 * GAME OBJECTS
+	 */
 	public List<Collider> colliders = new ArrayList<Collider>();
 	public List<GameObject> objects = new ArrayList<GameObject>();
 	public List<ResetBox> resetboxes = new ArrayList<ResetBox>();
@@ -50,21 +53,21 @@ public class Application extends JPanel {
 	public List<Bullet> bullets = new ArrayList<Bullet>();
 
 	/*
-	* GAME ASSETS
-	*/
+	 * GAME ASSETS
+	 */
 	public HashMap<String, Point> checkpoints = new HashMap<String, Point>();
 	public HashMap<String, BufferedImage> assets = new HashMap<String, BufferedImage>();
 	public HashMap<String, Color> colors = new HashMap<String, Color>();
 
 	/*
-	* GRAPHICS OBJECTS
-	*/
+	 * GRAPHICS OBJECTS
+	 */
 	Font DEBUG_TEXT = new Font("Arial", Font.PLAIN, 12);
 	Font UI_TEXT = new Font("Arial", Font.PLAIN, 28);
 
 	/*
-	* GAME CONSTANTS
-	*/	
+	 * GAME CONSTANTS
+	 */
 	double GRIDSIZE = Globals.GRIDSIZE;
 	double PLAYER_WIDTH = Globals.PLAYER_WIDTH;
 	double PLAYER_HEIGHT = Globals.PLAYER_HEIGHT;
@@ -73,21 +76,22 @@ public class Application extends JPanel {
 	boolean CLIP = false;
 
 	/*
-	* PLAYER PARAMETERS
-	*/
+	 * PLAYER PARAMETERS
+	 */
 	int extra_jumps = 0;
 	double vertical_velocity = 0;
 	boolean grounded = false;
-	int dash_count = 0;	
+	int dash_count = 0;
 	int facing = 0;
+	int lastfacing = 1;
 	double sprint_val = 1;
 	int intent_x = 0;
 	int intent_y = 0;
 	boolean sprint = false;
-	
+
 	/*
-	* SELECTOR VARIABLES
-	*/
+	 * SELECTOR VARIABLES
+	 */
 	char selecttype = 0;
 	String selectasset = "void";
 	String selectcolor = "black";
@@ -95,40 +99,50 @@ public class Application extends JPanel {
 	Point select_point_2 = new Point(0, 0);
 
 	/*
-	* MISC
-	*/
+	 * MISC
+	 */
 	boolean deathscreen = false;
 	boolean selectstage = false;
 	boolean typing = false;
 	String typing_str = "";
-	
+
 	/*
-	* ANIMATION VARIABLES
-	*/
+	 * ANIMATION VARIABLES
+	 */
 	boolean animation = false;
 	long animation_tick = 0;
 	long animation_time = 3000;
 	long sprint_tick = 0;
 	long dash_tick = 0;
+	long walk_tick = 0;
+	int player_anim = 0;
+
+	List<ImageDuo> anim_set = new ArrayList<>();
 
 	/*
-	* INIT METHOD
-	*/
+	 * INIT METHOD
+	 */
 	public void Init(int width, int height) {
-		
+
 		onResize(width, height);
 
-		
 		ImageImport.ImportImageAssets();
 
-		
+		ImageDuo duo1 = new ImageDuo();
+		duo1.img1 = assets.get("playermodel_0");
+		duo1.img2 = flippedImage(duo1.img1);
+		anim_set.add(duo1);
+
+		ImageDuo duo2 = new ImageDuo();
+		duo2.img1 = assets.get("playermodel_1");
+		duo2.img2 = flippedImage(duo2.img1);
+		anim_set.add(duo2);
+
 		LevelConfigUtil.loadLevel();
 
-		
 		if (checkpoints.containsKey("start"))
 			setPlayerPosFromSchem(checkpoints.get("start"));
 
-		
 		Collections.sort(objects, new Comparator<GameObject>() {
 			@Override
 			public int compare(GameObject a, GameObject b) {
@@ -141,21 +155,20 @@ public class Application extends JPanel {
 			}
 		});
 
-		
 		levelUpdate();
 	}
 
 	/*
-	* BACKEND GAME CODE
-	*/
+	 * BACKEND GAME CODE
+	 */
 	public void onTick() {
-		inputUpdate(true, typing, true);
+		inputUpdate(true, typing, (!animation && !typing));
 
 		deathscreen = ScreenAnimation.DeathScreen_Enabled(animation_tick);
-		
-		if(deathscreen)
+
+		if (deathscreen)
 			return;
-		
+
 		if (typing) {
 			if (entry.peripherals.keysTypedB()) {
 				typing_str += entry.peripherals.keysTyped();
@@ -166,23 +179,48 @@ public class Application extends JPanel {
 		if (animation) {
 			if (entry.tick - dash_tick < Globals.DASH_DURATION) {
 				vertical_velocity = 0;
-				double step_x = Globals.DASH_STEP / Globals.REFRESH_RATE*intent_x;
-				double step_y = Globals.DASH_STEP / Globals.REFRESH_RATE*intent_y;
+				double step_x = Globals.DASH_STEP / Globals.REFRESH_RATE * intent_x;
+				double step_y = Globals.DASH_STEP / Globals.REFRESH_RATE * intent_y;
 				CollisionReturn collided = playerCollision(step_x, step_y);
-				if (collided == null) {
+				if (collided == null || CLIP) {
 					location.x += step_x;
 					location.y -= step_y;
 				} else {
-					location.x += collided.disp_x;
-					location.y -= collided.disp_y;
-					dash_tick = 0;
-					animation = false;
+					if (collided.x_collision && collided.y_collision) {
+						location.x += collided.disp_x;
+						location.y -= collided.disp_y;
+						dash_tick = 0;
+						animation = false;
+					} else if (collided.x_collision && !collided.y_collision) {
+						location.x += collided.disp_x;
+						location.y -= step_y;
+					} else if (!collided.x_collision && collided.y_collision) {
+						location.x += step_x;
+						location.y -= collided.disp_y;
+					}
+
 				}
 				return;
 			}
 			animation = false;
 		} else {
 			playerCollisionAndMovementCode();
+		}
+
+		if (grounded) {
+			if (intent_x == 0) {
+				player_anim = 0;
+				walk_tick = entry.tick;
+			} else {
+				if (entry.tick - walk_tick > 400)
+				{
+					walk_tick = entry.tick;
+					if(player_anim==0)
+						player_anim = 1;
+					else
+						player_anim = 0;
+				}
+			}
 		}
 
 		for (ResetBox b : resetboxes) {
@@ -198,13 +236,12 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* PAINT METHOD
-	*/
+	 * PAINT METHOD
+	 */
 	@Override
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D) g1;
 
-		
 		Rect LEVEL_SCREEN_SPACE = new Rect(
 				Math.max(0, (TOPLEFT_BOUND.x) * GRIDSIZE - location.x),
 				Math.max(0, (TOPLEFT_BOUND.y) * GRIDSIZE - location.y),
@@ -215,12 +252,10 @@ public class Application extends JPanel {
 						getHeight() - TOPLEFT_BOUND.y * GRIDSIZE + location.y,
 						(BOTTOMRIGHT_BOUND.y - TOPLEFT_BOUND.y) * GRIDSIZE, getHeight()));
 
-		
 		g.setColor(Color.WHITE);
 		g.setStroke(new BasicStroke(2));
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
 
-		
 		for (GameObject o : objects) {
 			if (o.getZ() <= 1) {
 				if (o instanceof ColorRect) {
@@ -235,11 +270,6 @@ public class Application extends JPanel {
 			}
 		}
 
-		
-		
-		
-
-		
 		g.setColor(Color.GREEN);
 		g.setStroke(new BasicStroke(1));
 
@@ -260,16 +290,14 @@ public class Application extends JPanel {
 			}
 		}
 
-		
 		g.setColor(Color.BLACK);
-		g.setStroke(new BasicStroke(4));
+		g.setStroke(new BasicStroke(2));
 		for (Collider o : colliders) {
 			Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
 			if (inScreenSpace(r) && o.visible())
 				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 		}
 
-		
 		g.setColor(Color.ORANGE);
 		for (Collider o : newColliders) {
 			Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
@@ -278,19 +306,24 @@ public class Application extends JPanel {
 				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 		}
 
-		
-		g.setColor(Color.RED);
-		g.setStroke(new BasicStroke(4));
-		DrawUtil.DrawRect(g, PLAYER_SCREEN_LOC, Color.RED);
+		//g.setColor(Color.RED);
+		//g.setStroke(new BasicStroke(4));
+		//DrawUtil.DrawRect(g, PLAYER_SCREEN_LOC, Color.RED);
+		ImageDuo iduo = anim_set.get(player_anim);
+		BufferedImage pimg = null;
+		if (lastfacing == -1)
+			pimg = iduo.img2;
+		else if (lastfacing == 1)
+			pimg = iduo.img1;
+		g.drawImage(pimg, (int) PLAYER_SCREEN_LOC.x, (int) PLAYER_SCREEN_LOC.y, (int) PLAYER_SCREEN_LOC.width,
+				(int) PLAYER_SCREEN_LOC.height, null);
 
-		
 		for (Bullet b : bullets) {
 			Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
 			if (inScreenSpace(r))
 				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 		}
 
-		
 		for (GameObject o : objects) {
 			if (o.getZ() > 1) {
 				if (o instanceof ColorRect) {
@@ -305,7 +338,6 @@ public class Application extends JPanel {
 			}
 		}
 
-		
 		for (GameObject o : newObjects) {
 			if (o instanceof ColorRect) {
 				Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
@@ -318,7 +350,6 @@ public class Application extends JPanel {
 			}
 		}
 
-		
 		g.setColor(Color.RED);
 		g.fillRect(20, getHeight() - 60, 200, 10);
 		g.setColor(Color.YELLOW);
@@ -332,7 +363,6 @@ public class Application extends JPanel {
 		g.setColor(Color.GREEN);
 		g.setStroke(new BasicStroke(2));
 
-		
 		if (DEBUG_) {
 			for (ResetBox b : resetboxes) {
 				Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
@@ -397,22 +427,20 @@ public class Application extends JPanel {
 
 		}
 
-		
 		if (typing) {
 			g.setFont(UI_TEXT);
 			g.setColor(Color.RED);
 			g.drawString(typing_str, 40, 40);
 		}
 
-		
 		if (deathscreen) {
 			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
 		}
 	}
 
 	/*
-	* RESIZE EVENT
-	*/
+	 * RESIZE EVENT
+	 */
 	public void onResize(double width, double height) {
 		PLAYER_SCREEN_LOC = new Rect((width - PLAYER_WIDTH) / 2, (height + 0.3 * height - PLAYER_HEIGHT) / 2,
 				PLAYER_WIDTH,
@@ -420,8 +448,8 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* MOUSE CLICK EVENT
-	*/
+	 * MOUSE CLICK EVENT
+	 */
 	public void mouseClick(Point pos) {
 		if (DEBUG_) {
 			if (selectstage == false) {
@@ -447,6 +475,7 @@ public class Application extends JPanel {
 				levelUpdate();
 			}
 		} else {
+			System.out.println("Bullets");
 			Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
 					PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
 			double angle = (Math.atan2(
@@ -460,9 +489,9 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* INPUT MANAGEMENT
-	  Set local variables and toggles based on peripheral inputs
-	*/
+	 * INPUT MANAGEMENT
+	 * Set local variables and toggles based on peripheral inputs
+	 */
 	void inputUpdate(boolean essentials, boolean typing, boolean game) {
 		// Essential inputs that change global constants
 		if (essentials) {
@@ -528,7 +557,7 @@ public class Application extends JPanel {
 		// input while game is being played
 		if (game) {
 			int facing_ = (int) Math.copySign(1, entry.peripherals.mousePos().x - PLAYER_SCREEN_LOC.x);
-			if(facing_!=0)
+			if (facing_ != 0)
 				facing = facing_;
 
 			intent_x = 0;
@@ -543,28 +572,28 @@ public class Application extends JPanel {
 			if (entry.peripherals.KeyPressed(KeyEvent.VK_A))
 				intent_x--;
 
+			if (intent_x != 0)
+				lastfacing = intent_x;
 
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_X)) {
 				selectstage = false;
 			}
 
-			
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_B)) {
 				selecttype++;
 				if (selecttype > 2)
 					selecttype = 0;
 			}
 
-			
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_SHIFT)) {
-				
-				if (dash_count > 0) {
+
+				if (dash_count > 0 || CLIP) {
 					dash_count--;
 					dash_tick = entry.tick;
 					animation = true;
 				}
 			}
-			
+
 			if (entry.peripherals.KeyPressed(KeyEvent.VK_Z)) {
 				sprint = true;
 				if (sprint_val > 0)
@@ -580,12 +609,11 @@ public class Application extends JPanel {
 				}
 			}
 
-			
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_P)) {
 				LevelConfigUtil.saveLevel();
+				levelUpdate();
 			}
 
-			
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_C)) {
 				CLIP = !CLIP;
 				vertical_velocity = 0;
@@ -594,8 +622,8 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* PLAYER COLLISION AND MOVEMENT CODE
-	*/
+	 * PLAYER COLLISION AND MOVEMENT CODE
+	 */
 	public void playerCollisionAndMovementCode() {
 		double component_x = 0;
 		double component_y = 0;
@@ -612,8 +640,8 @@ public class Application extends JPanel {
 				component_y = speed * Math.sin(angle);
 			} else {
 				component_x = speed * intent_x;
-				if(intent_y ==-1 && Math.abs(vertical_velocity)<Globals.DROP_SPEED/Globals.REFRESH_RATE){
-					vertical_velocity = -Globals.DROP_SPEED/Globals.REFRESH_RATE;
+				if (intent_y == -1 && Math.abs(vertical_velocity) < Globals.DROP_SPEED / Globals.REFRESH_RATE) {
+					vertical_velocity = -Globals.DROP_SPEED / Globals.REFRESH_RATE;
 				}
 			}
 		}
@@ -631,7 +659,7 @@ public class Application extends JPanel {
 			Rect r = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
 
 			if (!CLIP) {
-				
+
 				CollisionReturn ret = CollisionUtil.DynamicCollision(PLAYER_SCREEN_LOC, r, component_x, component_y);
 				if (ret.y_collision) {
 					if (ret.intent_y == -1) {
@@ -665,13 +693,13 @@ public class Application extends JPanel {
 		}
 
 		if (grounded) {
-			if(min_disp!=Double.MAX_VALUE)
+			if (min_disp != Double.MAX_VALUE)
 				component_y = min_disp;
 			vertical_velocity = 0;
 			extra_jumps = Globals.EXTRA_JUMPS;
 			dash_count = Globals.DASH_COUNT;
 		}
-		if (entry.peripherals.KeyPressed(KeyEvent.VK_W)) {
+		if (entry.peripherals.KeyToggled(KeyEvent.VK_W)) {
 			if (grounded || extra_jumps > 0) {
 				if (!grounded)
 					extra_jumps--;
@@ -684,8 +712,8 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* CHECKS PLAYER COLLISION WITH ALL OBJECTS IN THE SCENE
-	*/
+	 * CHECKS PLAYER COLLISION WITH ALL OBJECTS IN THE SCENE
+	 */
 	public CollisionReturn playerCollision(double x, double y) {
 		CollisionReturn ret1 = null;
 		for (Collider c : colliders) {
@@ -697,10 +725,12 @@ public class Application extends JPanel {
 					ret1 = ret;
 				else {
 					if (ret.x_collision) {
+						ret1.x_collision = true;
 						if (Math.abs(ret.disp_x) > Math.abs(ret1.disp_x))
 							ret1.disp_x = ret.disp_x;
 					}
 					if (ret.y_collision) {
+						ret1.y_collision = true;
 						if (Math.abs(ret.disp_y) > Math.abs(ret1.disp_y))
 							ret1.disp_y = ret.disp_y;
 					}
@@ -710,10 +740,10 @@ public class Application extends JPanel {
 		}
 		return ret1;
 	}
-	
-		/*
-	* UPDATE SCHEMATIC LEVEL BOUNDS BASED ON GAME OBJECTS
-	*/
+
+	/*
+	 * UPDATE SCHEMATIC LEVEL BOUNDS BASED ON GAME OBJECTS
+	 */
 	void levelUpdate() {
 		TOPLEFT_BOUND = new Point(Double.MAX_VALUE, Double.MAX_VALUE);
 		BOTTOMRIGHT_BOUND = new Point(-Double.MAX_VALUE, -Double.MAX_VALUE);
@@ -760,18 +790,27 @@ public class Application extends JPanel {
 	}
 
 	/*
-	* Move player given a SCHEMATIC coordinate
-	*/
+	 * Move player given a SCHEMATIC coordinate
+	 */
 	void setPlayerPosFromSchem(Point p) {
 		location = new Point(p.getX() * GRIDSIZE - PLAYER_SCREEN_LOC.getX(),
 				p.getY() * GRIDSIZE - PLAYER_SCREEN_LOC.getY() - PLAYER_SCREEN_LOC.getHeight() / 2 - 1.5 * GRIDSIZE);
 	}
 
 	/*
-	* CHECK IF RECTANGLE IS INSIDE SCREEN SPACE
-	*/
+	 * CHECK IF RECTANGLE IS INSIDE SCREEN SPACE
+	 */
 	boolean inScreenSpace(Rect r) {
 		return CollisionUtil.staticCollision(new Rect(0, 0, this.getWidth(), this.getHeight()), r);
+	}
+
+	BufferedImage flippedImage(BufferedImage img) {
+		// Flip the image horizontally
+		AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
+		tx.translate(-img.getWidth(null), 0);
+		AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+		img = op.filter(img, null);
+		return img;
 	}
 
 }

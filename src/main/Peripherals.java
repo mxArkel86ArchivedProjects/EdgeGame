@@ -105,14 +105,13 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		Point pos = new Point(e.getX(), e.getY());
-		entry.app.mouseClick(pos);
+		
 	}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
+		Point pos = new Point(e.getX(), e.getY());
+		entry.app.mouseClick(pos);
 	}
 
 	@Override

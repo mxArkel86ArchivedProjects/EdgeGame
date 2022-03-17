@@ -64,7 +64,7 @@ cavegray,7f7f7f
 black,000000
 
 [checkpoint]
-start,18,28
+start,18,26
 
 [resetbox]
 #start,75,62,102,65

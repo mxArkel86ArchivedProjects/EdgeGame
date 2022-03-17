@@ -1,9 +1,8 @@
 -=-=-=-= output =-=-=-=-=-
 
 [collision]
+14,24,28,24,T
 
 [levelprop]
-cave3,80,34,86,39,1.001
-lamp,82,34,85,37,1.001
 
 [colorrect]
