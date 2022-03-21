@@ -1,10 +1,13 @@
 package main;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.awt.Color;
 import util.Rect;
 import util.SchemUtilities;
 import util.ScreenAnimation;
+import util.Size;
+import util.AssetSet;
 import util.CollisionReturn;
 import util.CollisionUtil;
 import util.LevelConfigUtil;
@@ -17,8 +20,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 
 import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,13 +51,13 @@ public class Application extends JPanel {
 	public List<ResetBox> resetboxes = new ArrayList<ResetBox>();
 	public List<GameObject> newObjects = new ArrayList<GameObject>();
 	public List<Collider> newColliders = new ArrayList<Collider>();
-	public List<Bullet> bullets = new ArrayList<Bullet>();
+	//public List<Bullet> bullets = new ArrayList<Bullet>();
 
 	/*
 	 * GAME ASSETS
 	 */
 	public HashMap<String, Point> checkpoints = new HashMap<String, Point>();
-	public HashMap<String, BufferedImage> assets = new HashMap<String, BufferedImage>();
+	public HashMap<String, AssetSet> assets = new HashMap<>();
 	public HashMap<String, Color> colors = new HashMap<String, Color>();
 
 	/*
@@ -126,23 +127,56 @@ public class Application extends JPanel {
 
 		onResize(width, height);
 
-		ImageImport.ImportImageAssets();
-
 		ImageDuo duo1 = new ImageDuo();
-		duo1.img1 = assets.get("playermodel_0");
-		duo1.img2 = flippedImage(duo1.img1);
+		duo1.img1 = resizeToGrid(ImageImport.getImage("assets/playermodel_0.png"), PLAYER_WIDTH, PLAYER_HEIGHT);
+		duo1.img2 = ImageImport.flippedImage(duo1.img1);
 		anim_set.add(duo1);
 
 		ImageDuo duo2 = new ImageDuo();
-		duo2.img1 = assets.get("playermodel_1");
-		duo2.img2 = flippedImage(duo2.img1);
+		duo2.img1 = resizeToGrid(ImageImport.getImage("assets/playermodel_1.png"), PLAYER_WIDTH, PLAYER_HEIGHT);
+		duo2.img2 = ImageImport.flippedImage(duo2.img1);
 		anim_set.add(duo2);
 
+		// Load Level
 		LevelConfigUtil.loadLevel();
+
+		HashMap<String, List<Size>> sizes = new HashMap<>();
+		for (GameObject o : objects) {
+			if (o instanceof LevelProp) {
+				LevelProp lp = (LevelProp) o;
+				List<Size> sizes_ = null;
+				if (sizes.containsKey(lp.getAsset())) {
+					sizes_ = sizes.get(lp.getAsset());
+				} else {
+					sizes_ = new ArrayList<Size>();
+				}
+				sizes_.add(new Size(lp.width, lp.height));
+				sizes.put(lp.getAsset(), sizes_);
+			}
+		}
+
+		for (final File fileEntry : new File("assets").listFiles()) {
+			if (fileEntry.isFile()) {
+				if (!fileEntry.getName().substring(fileEntry.getName().indexOf(".") + 1).equalsIgnoreCase("png")) {
+					continue;
+				}
+				String name = fileEntry.getName().substring(0, fileEntry.getName().indexOf("."));//no file extension
+				BufferedImage img = ImageImport.getImage(fileEntry.getPath());
+					
+				AssetSet set = new AssetSet(img);
+				if (sizes.containsKey(name)) {
+					for (Size s : sizes.get(name)) {
+						set.addAsset(s.width, s.height);
+					}
+				}
+				assets.put(name, set);
+	        }
+	    }
 
 		if (checkpoints.containsKey("start"))
 			setPlayerPosFromSchem(checkpoints.get("start"));
 
+		
 		Collections.sort(objects, new Comparator<GameObject>() {
 			@Override
 			public int compare(GameObject a, GameObject b) {
@@ -177,10 +211,11 @@ public class Application extends JPanel {
 		}
 
 		if (animation) {
+			double step_x = Globals.DASH_STEP * intent_x;
+			double step_y = Globals.DASH_STEP * intent_y;
 			if (entry.tick - dash_tick < Globals.DASH_DURATION) {
 				vertical_velocity = 0;
-				double step_x = Globals.DASH_STEP / Globals.REFRESH_RATE * intent_x;
-				double step_y = Globals.DASH_STEP / Globals.REFRESH_RATE * intent_y;
+
 				CollisionReturn collided = playerCollision(step_x, step_y);
 				if (collided == null || CLIP) {
 					location.x += step_x;
@@ -200,12 +235,16 @@ public class Application extends JPanel {
 					}
 
 				}
-				return;
+
+			} else {
+				animation = false;
+				vertical_velocity = step_y/Globals.DASH_DURATION*1000*Globals.DASH_PERCENT_FALLOFF_SPEED;
 			}
-			animation = false;
-		} else {
-			playerCollisionAndMovementCode();
 		}
+		
+		playerCollisionAndMovementCode();
+			//animation = false;
+		//}
 
 		if (grounded) {
 			if (intent_x == 0) {
@@ -255,17 +294,18 @@ public class Application extends JPanel {
 		g.setColor(Color.WHITE);
 		g.setStroke(new BasicStroke(2));
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
-
+		
 		for (GameObject o : objects) {
-			if (o.getZ() <= 1) {
-				if (o instanceof ColorRect) {
-					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
-					if (inScreenSpace(r))
-						o.paint(g, r);
-				} else if (o instanceof LevelProp) {
+			if (Math.ceil(o.getZ()) <= 0) {
+				if (o instanceof LevelProp) {
 					Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
 					if (inScreenSpace(r))
-						o.paint(g, r);
+						paintLevelProp(g, (LevelProp) o);
+				}else
+				if (o instanceof ColorRect) {
+					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
+					if (inScreenSpace(r)) 
+							paintColorRect(g, (ColorRect) o, 0);
 				}
 			}
 		}
@@ -291,7 +331,7 @@ public class Application extends JPanel {
 		}
 
 		g.setColor(Color.BLACK);
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(4));
 		for (Collider o : colliders) {
 			Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
 			if (inScreenSpace(r) && o.visible())
@@ -318,22 +358,24 @@ public class Application extends JPanel {
 		g.drawImage(pimg, (int) PLAYER_SCREEN_LOC.x, (int) PLAYER_SCREEN_LOC.y, (int) PLAYER_SCREEN_LOC.width,
 				(int) PLAYER_SCREEN_LOC.height, null);
 
-		for (Bullet b : bullets) {
-			Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
-			if (inScreenSpace(r))
-				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-		}
+		// for (Bullet b : bullets) {
+		// 	Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
+		// 	if (inScreenSpace(r))
+		// 		g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		// }
+
+		
 
 		for (GameObject o : objects) {
-			if (o.getZ() > 1) {
-				if (o instanceof ColorRect) {
-					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
-					if (inScreenSpace(r))
-						o.paint(g, r);
-				} else if (o instanceof LevelProp) {
+			if (Math.ceil(o.getZ())>0) {
+				if (o instanceof LevelProp) {
 					Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
 					if (inScreenSpace(r))
-						o.paint(g, r);
+						paintLevelProp(g, (LevelProp) o);
+				}else if (o instanceof ColorRect) {
+					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
+					if (inScreenSpace(r)) 
+							paintColorRect(g, (ColorRect) o, 0);
 				}
 			}
 		}
@@ -342,17 +384,17 @@ public class Application extends JPanel {
 			if (o instanceof ColorRect) {
 				Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
 				if (inScreenSpace(r))
-					o.paint(g, r);
+					paintColorRect(g, (ColorRect) o, o.getZ());
 			} else if (o instanceof LevelProp) {
 				Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
 				if (inScreenSpace(r))
-					o.paint(g, r);
+					paintLevelProp(g, (LevelProp) o);
 			}
 		}
 
 		g.setColor(Color.RED);
 		g.fillRect(20, getHeight() - 60, 200, 10);
-		g.setColor(Color.YELLOW);
+		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
 		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
 
 		g.setStroke(new BasicStroke(2));
@@ -407,7 +449,8 @@ public class Application extends JPanel {
 					g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 				} else if (selecttype == 1) {
 					if (assets.containsKey(selectasset))
-						g.drawImage(assets.get(selectasset), (int) r.getX(), (int) r.getY(), (int) r.getWidth(),
+						g.drawImage(assets.get(selectasset).getBaseAsset(), (int) r.getX(), (int) r.getY(),
+								(int) r.getWidth(),
 								(int) r.getHeight(), null);
 					else {
 						g.setColor(Color.RED);
@@ -474,18 +517,19 @@ public class Application extends JPanel {
 				}
 				levelUpdate();
 			}
-		} else {
-			System.out.println("Bullets");
-			Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
-					PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
-			double angle = (Math.atan2(
-					-pos.y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
-					-pos.x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
-			Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(angle),
-					arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(angle));
-			Bullet b = new Bullet(start.x, start.y, angle);
-			bullets.add(b);
-		}
+		} 
+		// else {
+		// 	System.out.println("Bullets");
+		// 	Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
+		// 			PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
+		// 	double angle = (Math.atan2(
+		// 			-pos.y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
+		// 			-pos.x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
+		// 	Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(angle),
+		// 			arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(angle));
+		// 	Bullet b = new Bullet(start.x, start.y, angle);
+		// 	bullets.add(b);
+		// }
 	}
 
 	/*
@@ -597,15 +641,15 @@ public class Application extends JPanel {
 			if (entry.peripherals.KeyPressed(KeyEvent.VK_Z)) {
 				sprint = true;
 				if (sprint_val > 0)
-					sprint_val -= Globals.SPRINT_DRAIN / Globals.REFRESH_RATE;
+					sprint_val -= Globals.SPRINT_DRAIN;
 				sprint_tick = entry.tick;
 			} else {
 				sprint = false;
 				if (sprint_tick + Globals.SPRINT_DELAY < entry.tick && sprint_val != 1) {
-					if (sprint_val + Globals.SPRINT_REGEN / Globals.REFRESH_RATE > 1)
+					if (sprint_val + Globals.SPRINT_REGEN > 1)
 						sprint_val = 1;
 					else
-						sprint_val += Globals.SPRINT_REGEN / Globals.REFRESH_RATE;
+						sprint_val += Globals.SPRINT_REGEN;
 				}
 			}
 
@@ -629,10 +673,10 @@ public class Application extends JPanel {
 		double component_y = 0;
 
 		double SPRINT = 1;
-		if (sprint && sprint_val > 0.2)
+		if (sprint && sprint_val > 0.0)
 			SPRINT = Globals.SPRINT_MULT;
 
-		double speed = PLAYER_SPEED * SPRINT / Globals.REFRESH_RATE;
+		double speed = PLAYER_SPEED * SPRINT;
 		if (!(intent_x == 0 && intent_y == 0)) {
 			double angle = Math.atan2(intent_y, intent_x);
 			if (CLIP) {
@@ -640,14 +684,14 @@ public class Application extends JPanel {
 				component_y = speed * Math.sin(angle);
 			} else {
 				component_x = speed * intent_x;
-				if (intent_y == -1 && Math.abs(vertical_velocity) < Globals.DROP_SPEED / Globals.REFRESH_RATE) {
-					vertical_velocity = -Globals.DROP_SPEED / Globals.REFRESH_RATE;
+				if (intent_y == -1 && Math.abs(vertical_velocity) < Globals.DROP_SPEED) {
+					vertical_velocity = -Globals.DROP_SPEED;
 				}
 			}
 		}
 
 		if (!CLIP) {
-			vertical_velocity -= Globals.GRAV_CONST / Globals.REFRESH_RATE;
+			vertical_velocity -= Globals.GRAV_CONST;
 			component_y += vertical_velocity;
 
 			grounded = false;
@@ -674,22 +718,22 @@ public class Application extends JPanel {
 					component_x = 0;
 				}
 			}
-			for (int i = 0; i < bullets.size(); i++) {
-				Bullet b = bullets.get(i);
-				Rect r2 = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
-				double dx = Globals.BULLET_SPEED * Math.cos(b.getAngle());
-				double dy = Globals.BULLET_SPEED * Math.sin(b.getAngle());
-				CollisionReturn ret2 = CollisionUtil.DynamicCollision(r2, r, dx, -dy);
-				double dist = Math
-						.sqrt(Math.pow(b.x - PLAYER_SCREEN_LOC.x, 2) + Math.pow(b.y - PLAYER_SCREEN_LOC.y, 2));
-				if (ret2.x_collision || ret2.y_collision || dist > Globals.BULLET_MAX_DISTANCE * GRIDSIZE) {
-					bullets.remove(i);
-					i--;
-				} else {
-					b.x += dx / Globals.REFRESH_RATE;
-					b.y += dy / Globals.REFRESH_RATE;
-				}
-			}
+			// for (int i = 0; i < bullets.size(); i++) {
+			// 	Bullet b = bullets.get(i);
+			// 	Rect r2 = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
+			// 	double dx = Globals.BULLET_SPEED * Math.cos(b.getAngle());
+			// 	double dy = Globals.BULLET_SPEED * Math.sin(b.getAngle());
+			// 	CollisionReturn ret2 = CollisionUtil.DynamicCollision(r2, r, dx, -dy);
+			// 	double dist = Math
+			// 			.sqrt(Math.pow(b.x - PLAYER_SCREEN_LOC.x, 2) + Math.pow(b.y - PLAYER_SCREEN_LOC.y, 2));
+			// 	if (ret2.x_collision || ret2.y_collision || dist > Globals.BULLET_MAX_DISTANCE * GRIDSIZE) {
+			// 		bullets.remove(i);
+			// 		i--;
+			// 	} else {
+			// 		b.x += dx;
+			// 		b.y += dy;
+			// 	}
+			// }
 		}
 
 		if (grounded) {
@@ -703,7 +747,7 @@ public class Application extends JPanel {
 			if (grounded || extra_jumps > 0) {
 				if (!grounded)
 					extra_jumps--;
-				vertical_velocity = Globals.JUMP_CONST * 10.0f / Globals.REFRESH_RATE;
+				vertical_velocity = Globals.JUMP_CONST * 10.0f;
 			}
 		}
 
@@ -804,13 +848,36 @@ public class Application extends JPanel {
 		return CollisionUtil.staticCollision(new Rect(0, 0, this.getWidth(), this.getHeight()), r);
 	}
 
-	BufferedImage flippedImage(BufferedImage img) {
-		// Flip the image horizontally
-		AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
-		tx.translate(-img.getWidth(null), 0);
-		AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-		img = op.filter(img, null);
-		return img;
+	void paintColorRect(Graphics g, ColorRect rect, double depth) {
+		Rect r = SchemUtilities.schemToLocal(rect, location, GRIDSIZE);
+		float c = 0.05f;
+		if (!entry.app.colors.containsKey(rect.getColor())) {
+			g.setColor(Color.RED);
+			g.fillRect((int) Math.floor(r.getX() - c), (int) Math.floor(r.getY() - c),
+					(int) Math.ceil(r.getWidth() + c), (int) Math.ceil(r.getHeight() + c));
+		} else {
+			g.setColor(entry.app.colors.get(rect.getColor()));
+			g.fillRect((int) Math.floor(r.getX() - c), (int) Math.floor(r.getY() - c),
+					(int) Math.ceil(r.getWidth() + c), (int) Math.ceil(r.getHeight() + c));
+		}
+	}
+	
+	void paintLevelProp(Graphics g, LevelProp p) {
+		Rect r = SchemUtilities.schemToLocalZ(p, PLAYER_SCREEN_LOC, location, p.getZ(), GRIDSIZE);
+		if (!entry.app.assets.containsKey(p.getAsset())) {
+			g.setColor(Color.RED);
+			g.fillRect((int) Math.round(r.getX()), (int) Math.round(r.getY()), (int) r.getWidth(), (int) r.getHeight());
+		} else {
+			AssetSet as1 = entry.app.assets.get(p.getAsset());
+			BufferedImage img = as1.getAsset(p.width, p.height);
+			g.drawImage(img, (int) Math.round(r.getX()), (int) Math.round(r.getY()), (int) r.getWidth(),
+					(int) r.getHeight(), null);
+		}
+	}
+	
+	BufferedImage resizeToGrid(BufferedImage img, double width, double height) {
+		return ImageImport.resize(img, (int) (width / GRIDSIZE * Globals.PIXELS_PER_GRID),
+				(int) (height / GRIDSIZE * Globals.PIXELS_PER_GRID));
 	}
 
 }

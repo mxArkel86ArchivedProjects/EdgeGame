@@ -1,8 +1,8 @@
 -=-=-=-= output =-=-=-=-=-
 
 [collision]
-14,24,28,24,T
 
 [levelprop]
 
 [colorrect]
+black,26,22,31,26,1.001

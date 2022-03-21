@@ -10,9 +10,7 @@ public abstract class GameObject extends Rect {
 		this.depth = depth;
 	}
 	double depth;
-	
-	public abstract void paint(Graphics g, Rect r);
-	
+
 	public double getZ() {
 		return depth;
 	}

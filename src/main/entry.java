@@ -47,25 +47,37 @@ public static long tick = 0;
 		
 		Thread thread=new Thread(() ->
         {
-        	long diff = (long)(1000000000l/Globals.REFRESH_RATE);
-        	long reg = 0;
+			long diff = (long) (1000000000l / Globals.REFRESH_RATE);
+			//long diff2 = (long)(1000000000l/100);
+			long reg = 0;
+			//long reg2 = 0;
             while(true)
             {
                 long time=System.nanoTime();
 				tick = time/1000000;
-                if(time>=reg+diff) {
-                try { 
-                	reg = time;
-                	SwingUtilities.invokeAndWait(() ->{
-					app.onTick();
-                    app.repaint(0,0, app.getWidth(), app.getHeight());
-                	});
-                
-                }
-                catch(Exception e) { 
-                	((Throwable) e).getStackTrace(); 
-                }
-                }
+				if (time >= reg + diff) {
+					try {
+						reg = time;
+						SwingUtilities.invokeAndWait(() -> {
+							app.onTick();
+							app.repaint(0, 0, app.getWidth(), app.getHeight());
+						});
+
+					} catch (Exception e) {
+						((Throwable) e).getStackTrace();
+					}
+				}
+				// if (time >= reg2 + diff2) {
+				// 	try {
+				// 		reg2 = time;
+				// 		SwingUtilities.invokeAndWait(() -> {
+				// 			app.onTick();
+				// 		});
+
+				// 	} catch (Exception e) {
+				// 		((Throwable) e).getStackTrace();
+				// 	}
+				// }
                 try {
                 //Thread.sleep(16L);
                 }catch(Exception e) {

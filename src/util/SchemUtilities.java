@@ -13,7 +13,8 @@ public class SchemUtilities {
     			r.getHeight() * GRIDSIZE);
     }
 
-    public static Rect schemToLocalZ(Rect r, Rect PLAYER_SCREEN_LOC, Point location, double z, double GRIDSIZE) {
+	public static Rect schemToLocalZ(Rect r, Rect PLAYER_SCREEN_LOC, Point location, double depth, double GRIDSIZE) {
+		double z = Math.exp(depth);
     	Point p = new Point(
     			r.getX() * GRIDSIZE * z - location.x * z - (PLAYER_SCREEN_LOC.getX() * z - PLAYER_SCREEN_LOC.getX())
     					+ (r.getWidth() * GRIDSIZE / 2 * z - r.getWidth() * GRIDSIZE / 2)

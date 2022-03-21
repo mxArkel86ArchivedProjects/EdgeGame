@@ -14,15 +14,6 @@ public class LevelProp extends GameObject {
 		
 		this.asset = asset;
 	}
-	@Override
-	public void paint(Graphics g, Rect r) {
-		if(!entry.app.assets.containsKey(asset)) {
-			g.setColor(Color.RED);
-			g.fillRect((int)Math.round(r.getX()), (int)Math.round(r.getY()), (int)r.getWidth(), (int)r.getHeight());
-		}else {
-			g.drawImage(entry.app.assets.get(asset), (int)Math.round(r.getX()), (int)Math.round(r.getY()), (int)r.getWidth(), (int)r.getHeight(), null);
-		}
-	}
 
 	public String getAsset(){
 		return asset;
