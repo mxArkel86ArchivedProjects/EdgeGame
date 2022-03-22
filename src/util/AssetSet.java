@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 import main.Globals;
 
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 
 public class AssetSet {

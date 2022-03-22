@@ -6,6 +6,8 @@ import java.util.Timer;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+//import net.java.games.input.Controller;
+
 public class entry {
 public static JFrame frame;
 public static Application app;
@@ -45,6 +47,8 @@ public static long tick = 0;
 		app.addMouseMotionListener(peripherals);
 		app.addMouseListener(peripherals);
 		
+		//Controller c = peripherals.getControllers()[0];
+
 		Thread thread=new Thread(() ->
         {
 			long diff = (long) (1000000000l / Globals.REFRESH_RATE);
@@ -59,6 +63,7 @@ public static long tick = 0;
 					try {
 						reg = time;
 						SwingUtilities.invokeAndWait(() -> {
+							//peripherals.ControllerTick(c);
 							app.onTick();
 							app.repaint(0, 0, app.getWidth(), app.getHeight());
 						});

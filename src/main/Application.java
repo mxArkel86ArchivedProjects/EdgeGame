@@ -18,6 +18,7 @@ import util.ImageImport;
 import util.Point;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
 
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ import javax.swing.JPanel;
 import java.awt.Font;
 import java.awt.BasicStroke;
 
-import gameObjects.Bullet;
 import gameObjects.Collider;
 import gameObjects.ColorRect;
 import gameObjects.GameObject;
@@ -89,6 +89,7 @@ public class Application extends JPanel {
 	int intent_x = 0;
 	int intent_y = 0;
 	boolean sprint = false;
+	double looking_angle = 0;
 
 	/*
 	 * SELECTOR VARIABLES
@@ -392,19 +393,6 @@ public class Application extends JPanel {
 			}
 		}
 
-		g.setColor(Color.RED);
-		g.fillRect(20, getHeight() - 60, 200, 10);
-		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
-		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
-
-		g.setStroke(new BasicStroke(2));
-		g.setColor(Color.BLACK);
-		g.drawRect(20, getHeight() - 60, 200, 10);
-		g.drawRect(20, getHeight() - 40, 200, 10);
-
-		g.setColor(Color.GREEN);
-		g.setStroke(new BasicStroke(2));
-
 		if (DEBUG_) {
 			for (ResetBox b : resetboxes) {
 				Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
@@ -479,13 +467,71 @@ public class Application extends JPanel {
 		if (deathscreen) {
 			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
 		}
+		
+		Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
+				PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
+
+		int dist = 700;
+		double STEP = Math.PI / 24;
+		
+		//Polygon light = new Polygon(new int[] {(int)center.x, (int)(center.x+angle_top.x), (int)(center.x+angle_bottom.x), (int)center.x}, new int[] {(int)center.y, (int)(center.y+angle_top.y), (int)(center.y+angle_bottom.y), (int)center.y}, 4);
+		//Polygon box = new Polygon(new int[] {100, 400, 400, 100, 100}, new int[] {100, 100, 200, 200, 100}, 5);
+
+		if (!DEBUG_) {
+			double diff1 = 0.008;
+			double fov = Math.PI / 12;
+			for (int i = 0; i < 30; i++) {
+
+				int r = 120 + 4 * i;
+				Polygon circle = new Polygon();
+				List<Polygon> polygons = new ArrayList<Polygon>();
+				double angle_diff = 0;//Math.atan2((3*i) , (dist));
+
+				double angle_1 = looking_angle - fov + angle_diff;
+				double angle_2 = looking_angle + fov - angle_diff;
+				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - (i * diff1))),
+						(int) (center.y + r * Math.sin(angle_1 - (i * diff1))));
+				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_1 - (i * diff1))),
+						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_1 - (i * diff1))));
+				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_2 + (i * diff1))),
+						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_2 + (i * diff1))));
+				circle.addPoint((int) (center.x + r * Math.cos(angle_2 + (i * diff1))),
+						(int) (center.y + r * Math.sin(angle_2 + (i * diff1))));
+
+				for (double a = angle_2; a + STEP < angle_1 - (i * diff1) + 2 * Math.PI; a += STEP) {
+					circle.addPoint((int) (center.x + r * Math.cos(a)),
+							(int) (center.y + r * Math.sin(a)));
+				}
+				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - (i * diff1))),
+						(int) (center.y + r * Math.sin(angle_1 - (i * diff1))));
+
+				polygons.add(circle);
+
+				g.setColor(new Color(0, 0, 0, 24));
+				DrawUtil.DrawInvertedPolygon(polygons, g, this.getWidth(), this.getHeight());
+			}
+		}
+
+		g.setColor(Color.RED);
+		g.fillRect(20, getHeight() - 60, 200, 10);
+		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
+		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
+
+		g.setStroke(new BasicStroke(2));
+		g.setColor(Color.BLACK);
+		g.drawRect(20, getHeight() - 60, 200, 10);
+		g.drawRect(20, getHeight() - 40, 200, 10);
+
+		g.setColor(Color.GREEN);
+		g.setStroke(new BasicStroke(2));
 	}
+	
 
 	/*
 	 * RESIZE EVENT
 	 */
 	public void onResize(double width, double height) {
-		PLAYER_SCREEN_LOC = new Rect((width - PLAYER_WIDTH) / 2, (height + 0.3 * height - PLAYER_HEIGHT) / 2,
+		PLAYER_SCREEN_LOC = new Rect((width - PLAYER_WIDTH) / 2, (height + 0.0 * height - PLAYER_HEIGHT) / 2,
 				PLAYER_WIDTH,
 				PLAYER_HEIGHT);
 	}
@@ -603,6 +649,10 @@ public class Application extends JPanel {
 			int facing_ = (int) Math.copySign(1, entry.peripherals.mousePos().x - PLAYER_SCREEN_LOC.x);
 			if (facing_ != 0)
 				facing = facing_;
+
+			looking_angle = (Math.atan2(
+					 			-entry.peripherals.mousePos().y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
+					 			-entry.peripherals.mousePos().x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
 
 			intent_x = 0;
 			intent_y = 0;

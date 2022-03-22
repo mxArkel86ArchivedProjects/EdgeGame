@@ -1,12 +1,12 @@
 package main;
 
 public class Globals {
-	public static final double PLAYER_WIDTH = 100;
-	public static final double PLAYER_HEIGHT = 200;
+	public static final double PLAYER_WIDTH = 80;
+	public static final double PLAYER_HEIGHT = 160;
 	public static final double PLAYER_SPEED = 5;
 	public static final double DROP_SPEED = 10;
 	public static final double DEBUG_PLAYER_SPEED = 8;
-	public static final double GRIDSIZE = 50;
+	public static final double GRIDSIZE = 40;
 	public static final double DEBUG_SCALE = 2;
 	public static final double REFRESH_RATE = 60;
 	public static final int INITIAL_HEIGHT = 720;

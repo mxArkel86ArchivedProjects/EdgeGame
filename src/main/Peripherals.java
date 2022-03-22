@@ -5,15 +5,47 @@ import java.util.*;
 
 import javax.swing.event.MouseInputListener;
 
+//import net.java.games.input.Component;
+//import net.java.games.input.Controller;
+//import net.java.games.input.ControllerEnvironment;
+//import net.java.games.input.Event;
+//import net.java.games.input.EventQueue;
 import util.Point;
 
 
 public class Peripherals implements ComponentListener, KeyListener, MouseInputListener {
 	HashMap<Integer, Boolean> keyRegister = new HashMap<Integer, Boolean>();
 	HashMap<Integer, Boolean> keyToggleRegister = new HashMap<Integer, Boolean>();
+	//List<HashMap<Integer, Boolean>> controllersRegister = new ArrayList<>();
 	Point MOUSE_POS = new Point(0,0);
 	String typed_str = "";
 	boolean type_enable = false;
+	
+	
+//	public Controller[] getControllers() {
+//		return ControllerEnvironment.getDefaultEnvironment().getControllers();
+//	}
+//	
+//	
+//	public void ControllerTick(Controller controller) {
+//		if(controller!=null) {
+//		Event event = new Event();
+//		    /* Remember to poll each one */
+//		    controller.poll();
+//
+//		    /* Get the controllers event queue */
+//		    EventQueue queue = controller.getEventQueue();
+//
+//		    /* For each object in the queue */
+//		 while (queue.getNextEvent(event)) {
+//		        /* Get event component */
+//				Component comp = event.getComponent();
+//				String input_name = comp.getName();
+//				System.out.println(input_name);
+//		 }
+//		
+//		}
+//	}
 	
 	@Override
 	public void componentResized(ComponentEvent e) {

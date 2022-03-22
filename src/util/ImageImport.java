@@ -10,9 +10,6 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import main.Globals;
-import main.entry;
-
 public class ImageImport {
 	public static BufferedImage getImage(String path) {
 		try {

@@ -1,11 +1,5 @@
 package gameObjects;
 
-import java.awt.Graphics;
-import main.entry;
-import util.Rect;
-
-import java.awt.Color;
-
 public class LevelProp extends GameObject {
 	String asset;
 	
