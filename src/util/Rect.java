@@ -42,4 +42,7 @@ public class Rect {
 	public void setHeight(double height) {
 		this.height = height;
 	}
+    public Rect extend(double i) {
+        return new Rect(this.x-i, this.y-i, this.width+2*i, this.height+2*i);
+    }
 }

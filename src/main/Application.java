@@ -89,6 +89,7 @@ public class Application extends JPanel {
 	int intent_y = 0;
 	boolean sprint = false;
 	double looking_angle = 0;
+	boolean flashlight_on = true;
 
 	/*
 	 * SELECTOR VARIABLES
@@ -379,60 +380,62 @@ public class Application extends JPanel {
 		double fov = Math.PI / 6;
 
 		g.setColor(new Color(0, 0, 0, 10));
-		// for (int i = 0; i < 5; i++) {
-
 		
+		if (flashlight_on) {
 		Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
 				PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
 
-		// 	Polygon light = new Polygon(
-		// 			new int[] { (int) center.x, (int) (center.x + angle_top.x), (int) (center.x + angle_bottom.x),
-		// 					(int) center.x },
-		// 			new int[] { (int) center.y, (int) (center.y + angle_top.y), (int) (center.y + angle_bottom.y),
-		// 					(int) center.y },
-		// 			4);
-
-		// 	g.fillPolygon(light);
-		// }
-		
 		double STEP = Math.PI / 12;
 
-		// Polygon light = new Polygon(
-		// 		new int[] { (int) center.x, (int) (center.x + angle_top.x), (int) (center.x + angle_bottom.x),
-		// 				(int) center.x },
-		// 		new int[] { (int) center.y, (int) (center.y + angle_top.y), (int) (center.y + angle_bottom.y),
-		// 				(int) center.y },
-		// 		4);
 		
-		for (int i = 0; i < 10; i++) {
-			
-			double dist = 600 + 10 * i;
-			int r = 120 + 8 * i;
-			Polygon circle = new Polygon();
-			double angle_diff = -0.08 * i;
-			double angle_diff2 = 0.06*i;
+			for (int i = 1; i < 12; i++) {
 
-			double angle_1 = looking_angle - fov - angle_diff2;
-			double angle_2 = looking_angle + fov + angle_diff2;
-			circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
-					(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
-			circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_1 - angle_diff)),
-					(int) (center.y + (dist - (i * 4)) * Math.sin(angle_1 - angle_diff)));
-			circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_2 + angle_diff)),
-					(int) (center.y + (dist - (i * 4)) * Math.sin(angle_2 + angle_diff)));
-			circle.addPoint((int) (center.x + r * Math.cos(angle_2 + angle_diff)),
-					(int) (center.y + r * Math.sin(angle_2 + angle_diff)));
+				double dist = 500 + 12*i;
+				double r = 120 + Math.exp(i*0.4);
+				Polygon circle = new Polygon();
+				double angle_diff = -0.07 * i;
+				double angle_diff2 = 0.06 * i;
 
-			for (double a = angle_2; a + STEP < angle_1 - angle_diff + 2 * Math.PI; a += STEP) {
-				circle.addPoint((int) (center.x + r * Math.cos(a)),
-						(int) (center.y + r * Math.sin(a)));
+				double angle_1 = looking_angle - fov - angle_diff2;
+				double angle_2 = looking_angle + fov + angle_diff2;
+				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
+						(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
+				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_1 - angle_diff)),
+						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_1 - angle_diff)));
+				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_2 + angle_diff)),
+						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_2 + angle_diff)));
+				circle.addPoint((int) (center.x + r * Math.cos(angle_2 + angle_diff)),
+						(int) (center.y + r * Math.sin(angle_2 + angle_diff)));
+
+				for (double a = angle_2; a + STEP < angle_1 - angle_diff + 2 * Math.PI; a += STEP) {
+					circle.addPoint((int) (center.x + r * Math.cos(a)),
+							(int) (center.y + r * Math.sin(a)));
+				}
+				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
+						(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
+
+				g.setColor(new Color(0, 0, 0, 24));
+				g.fillPolygon(circle);
+
 			}
-			circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
-					(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
-
-
-			g.setColor(new Color(0, 0, 0, 24));
-			g.fillPolygon(circle);
+		}
+		
+		for (GameObject o : objects) {
+			
+			if (o instanceof LevelProp) {
+				LevelProp p = (LevelProp) o;
+				if (p.getAsset().equals("lamp")) {
+					Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
+					if (inScreenSpace(r.extend(Math.exp(7)))) {
+						for (int i = 0; i < 7; i++) {
+							double dist = Math.exp(i);
+							g.fillOval((int) (r.getX() - dist), (int) (r.getY() - dist),
+									(int) (r.getWidth() + 2*dist), (int) (r.getWidth() + 2*dist));
+						}
+					}
+						
+				}
+			}
 		}
 	}
 	/*
@@ -450,7 +453,7 @@ public class Application extends JPanel {
 
 		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
-		g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+		g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 
 		Graphics2D g_raw = (Graphics2D) raw_game.getGraphics();
 		Graphics2D g_light = (Graphics2D) light_mask.getGraphics();
@@ -490,99 +493,95 @@ public class Application extends JPanel {
 				
 		g.drawImage(display, 0,0, null);
 
-		// if (DEBUG_) {
-		// 	for (ResetBox b : resetboxes) {
-		// 		Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
-		// 		if (inScreenSpace(r))
-		// 			g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
-		// 					(int) Math.floor(r.getHeight()));
-		// 	}
+		if (DEBUG_) {
+			for (ResetBox b : resetboxes) {
+				Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
+				if (inScreenSpace(r))
+					g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
+							(int) Math.floor(r.getHeight()));
+			}
 
-		// 	g.setColor(Color.BLACK);
-		// 	Point mouse = entry.peripherals.mousePos();
-		// 	Point schem_mouse = SchemUtilities.schemPointFromFramePos(mouse, location, GRIDSIZE);
-		// 	int z = 3;
-		// 	g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
+			g.setColor(Color.BLACK);
+			Point mouse = entry.peripherals.mousePos();
+			Point schem_mouse = SchemUtilities.schemPointFromFramePos(mouse, location, GRIDSIZE);
+			int z = 3;
+			g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
 
-		// 	g.setFont(DEBUG_TEXT);
-		// 	String focus = selectasset;
-		// 	if (selecttype == 2)
-		// 		focus = selectcolor;
-		// 	g.drawString(
-		// 			String.format(
-		// 					"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s]",
-		// 					mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
-		// 					vertical_velocity, (int) selecttype, typing, focus),
-		// 			20,
-		// 			g.getFontMetrics().getAscent() + 20);
+			g.setFont(DEBUG_TEXT);
+			String focus = selectasset;
+			if (selecttype == 2)
+				focus = selectcolor;
+			g.drawString(
+					String.format(
+							"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s]",
+							mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
+							vertical_velocity, (int) selecttype, typing, focus),
+					20,
+					g.getFontMetrics().getAscent() + 20);
 
-		// 	g.setStroke(new BasicStroke(6));
-		// 	g.setColor(Color.BLUE);
-		// 	g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
-		// 			(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
+			g.setStroke(new BasicStroke(6));
+			g.setColor(Color.BLUE);
+			g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
+					(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
 
-		// 	if (selectstage == true) {
-		// 		Point p1 = SchemUtilities.schemToLocalPoint(select_point_1, location, GRIDSIZE);
-		// 		Point p2 = SchemUtilities.schemToLocalPoint(
-		// 				SchemUtilities.schemPointFromFramePos(entry.peripherals.mousePos(), location, GRIDSIZE),
-		// 				location, GRIDSIZE);
-		// 		Rect r = new Rect(p1, p2);
+			if (selectstage == true) {
+				Point p1 = SchemUtilities.schemToLocalPoint(select_point_1, location, GRIDSIZE);
+				Point p2 = SchemUtilities.schemToLocalPoint(
+						SchemUtilities.schemPointFromFramePos(entry.peripherals.mousePos(), location, GRIDSIZE),
+						location, GRIDSIZE);
+				Rect r = new Rect(p1, p2);
 
-		// 		if (selecttype == 0) {
-		// 			g.setColor(Color.RED);
-		// 			g.setStroke(new BasicStroke(4));
-		// 			g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-		// 		} else if (selecttype == 1) {
-		// 			if (assets.containsKey(selectasset))
-		// 				g.drawImage(assets.get(selectasset).getBaseAsset(), (int) r.getX(), (int) r.getY(),
-		// 						(int) r.getWidth(),
-		// 						(int) r.getHeight(), null);
-		// 			else {
-		// 				g.setColor(Color.RED);
-		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-		// 			}
-		// 		} else if (selecttype == 2) {
-		// 			if (colors.containsKey(selectcolor)) {
-		// 				g.setColor(colors.get(selectcolor));
-		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(),
-		// 						(int) r.getHeight());
-		// 			} else {
-		// 				g.setColor(Color.RED);
-		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-		// 			}
-		// 		}
-		// 	}
+				if (selecttype == 0) {
+					g.setColor(Color.RED);
+					g.setStroke(new BasicStroke(4));
+					g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+				} else if (selecttype == 1) {
+					if (assets.containsKey(selectasset))
+						g.drawImage(assets.get(selectasset).getBaseAsset(), (int) r.getX(), (int) r.getY(),
+								(int) r.getWidth(),
+								(int) r.getHeight(), null);
+					else {
+						g.setColor(Color.RED);
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+					}
+				} else if (selecttype == 2) {
+					if (colors.containsKey(selectcolor)) {
+						g.setColor(colors.get(selectcolor));
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(),
+								(int) r.getHeight());
+					} else {
+						g.setColor(Color.RED);
+						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+					}
+				}
+			}
 
-		// }
+		}
 
-		// if (typing) {
-		// 	g.setFont(UI_TEXT);
-		// 	g.setColor(Color.RED);
-		// 	g.drawString(typing_str, 40, 40);
-		// }
+		if (typing) {
+			g.setFont(UI_TEXT);
+			g.setColor(Color.RED);
+			g.drawString(typing_str, 40, 40);
+		}
 
-		// if (deathscreen) {
-		// 	ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
-		// }
-
-		// Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
-		// 		PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
-
+		if (deathscreen) {
+			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
+		}
 
 		
 		
-		// g.setColor(Color.RED);
-		// g.fillRect(20, getHeight() - 60, 200, 10);
-		// g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
-		// g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
+		g.setColor(Color.RED);
+		g.fillRect(20, getHeight() - 60, 200, 10);
+		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
+		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
 
-		// g.setStroke(new BasicStroke(2));
-		// g.setColor(Color.BLACK);
-		// g.drawRect(20, getHeight() - 60, 200, 10);
-		// g.drawRect(20, getHeight() - 40, 200, 10);
+		g.setStroke(new BasicStroke(2));
+		g.setColor(Color.BLACK);
+		g.drawRect(20, getHeight() - 60, 200, 10);
+		g.drawRect(20, getHeight() - 40, 200, 10);
 
-		// g.setColor(Color.GREEN);
-		// g.setStroke(new BasicStroke(2));
+		g.setColor(Color.GREEN);
+		g.setStroke(new BasicStroke(2));
 	}
 
 
