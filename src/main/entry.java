@@ -41,6 +41,8 @@ public static long tick = 0;
 		// 	}
 			
 		// }, 0, 10);
+
+		System.setProperty("sun.java2d.opengl", "true");
 		
 		frame.addComponentListener(peripherals);
 		frame.addKeyListener(peripherals);

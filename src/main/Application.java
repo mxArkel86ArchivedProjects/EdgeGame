@@ -1,8 +1,10 @@
 package main;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
+import java.awt.image.ColorModel;
 import java.io.File;
-import java.awt.Color;
+
 import util.Rect;
 import util.SchemUtilities;
 import util.ScreenAnimation;
@@ -16,9 +18,6 @@ import util.DrawUtil;
 import util.ImageDuo;
 import util.ImageImport;
 import util.Point;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Polygon;
 
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -28,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.JPanel;
-import java.awt.Font;
-import java.awt.BasicStroke;
+
+import java.awt.*;
 
 import gameObjects.Collider;
 import gameObjects.ColorRect;
@@ -121,11 +120,16 @@ public class Application extends JPanel {
 
 	List<ImageDuo> anim_set = new ArrayList<>();
 
+	GraphicsConfiguration gconfig = null;
+
 	/*
 	 * INIT METHOD
 	 */
 	public void Init(int width, int height) {
 
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		gconfig = ge.getDefaultScreenDevice().getDefaultConfiguration();
+		
 		onResize(width, height);
 
 		ImageDuo duo1 = new ImageDuo();
@@ -239,12 +243,12 @@ public class Application extends JPanel {
 
 			} else {
 				animation = false;
-				vertical_velocity = step_y/Globals.DASH_DURATION*1000*Globals.DASH_PERCENT_FALLOFF_SPEED;
+				vertical_velocity = step_y / Globals.DASH_DURATION * 1000 * Globals.DASH_PERCENT_FALLOFF_SPEED;
 			}
 		}
-		
+
 		playerCollisionAndMovementCode();
-			//animation = false;
+		//animation = false;
 		//}
 
 		if (grounded) {
@@ -252,10 +256,9 @@ public class Application extends JPanel {
 				player_anim = 0;
 				walk_tick = entry.tick;
 			} else {
-				if (entry.tick - walk_tick > 400)
-				{
+				if (entry.tick - walk_tick > 400) {
 					walk_tick = entry.tick;
-					if(player_anim==0)
+					if (player_anim == 0)
 						player_anim = 1;
 					else
 						player_anim = 0;
@@ -274,39 +277,19 @@ public class Application extends JPanel {
 			}
 		}
 	}
+	
 
-	/*
-	 * PAINT METHOD
-	 */
-	@Override
-	public void paint(Graphics g1) {
-		Graphics2D g = (Graphics2D) g1;
-
-		Rect LEVEL_SCREEN_SPACE = new Rect(
-				Math.max(0, (TOPLEFT_BOUND.x) * GRIDSIZE - location.x),
-				Math.max(0, (TOPLEFT_BOUND.y) * GRIDSIZE - location.y),
-				MathUtil.min_(BOTTOMRIGHT_BOUND.x * GRIDSIZE - location.x,
-						getWidth() - TOPLEFT_BOUND.x * GRIDSIZE + location.x,
-						(BOTTOMRIGHT_BOUND.x - TOPLEFT_BOUND.x) * GRIDSIZE, getWidth()),
-				MathUtil.min_(BOTTOMRIGHT_BOUND.y * GRIDSIZE - location.y,
-						getHeight() - TOPLEFT_BOUND.y * GRIDSIZE + location.y,
-						(BOTTOMRIGHT_BOUND.y - TOPLEFT_BOUND.y) * GRIDSIZE, getHeight()));
-
-		g.setColor(Color.WHITE);
-		g.setStroke(new BasicStroke(2));
-		g.fillRect(0, 0, this.getWidth(), this.getHeight());
-		
+	void RawGame(Graphics2D g) {
 		for (GameObject o : objects) {
 			if (Math.ceil(o.getZ()) <= 0) {
 				if (o instanceof LevelProp) {
 					Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
 					if (inScreenSpace(r))
 						paintLevelProp(g, (LevelProp) o);
-				}else
-				if (o instanceof ColorRect) {
+				} else if (o instanceof ColorRect) {
 					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
-					if (inScreenSpace(r)) 
-							paintColorRect(g, (ColorRect) o, 0);
+					if (inScreenSpace(r))
+						paintColorRect(g, (ColorRect) o, 0);
 				}
 			}
 		}
@@ -365,18 +348,16 @@ public class Application extends JPanel {
 		// 		g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
 		// }
 
-		
-
 		for (GameObject o : objects) {
-			if (Math.ceil(o.getZ())>0) {
+			if (Math.ceil(o.getZ()) > 0) {
 				if (o instanceof LevelProp) {
 					Rect r = SchemUtilities.schemToLocalZ(o, PLAYER_SCREEN_LOC, location, o.getZ(), GRIDSIZE);
 					if (inScreenSpace(r))
 						paintLevelProp(g, (LevelProp) o);
-				}else if (o instanceof ColorRect) {
+				} else if (o instanceof ColorRect) {
 					Rect r = SchemUtilities.schemToLocal(o, location, GRIDSIZE);
-					if (inScreenSpace(r)) 
-							paintColorRect(g, (ColorRect) o, 0);
+					if (inScreenSpace(r))
+						paintColorRect(g, (ColorRect) o, 0);
 				}
 			}
 		}
@@ -392,140 +373,218 @@ public class Application extends JPanel {
 					paintLevelProp(g, (LevelProp) o);
 			}
 		}
+	}
 
-		if (DEBUG_) {
-			for (ResetBox b : resetboxes) {
-				Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
-				if (inScreenSpace(r))
-					g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
-							(int) Math.floor(r.getHeight()));
-			}
+	private void LightMask(Graphics2D g) {
+		double fov = Math.PI / 6;
 
-			g.setColor(Color.BLACK);
-			Point mouse = entry.peripherals.mousePos();
-			Point schem_mouse = SchemUtilities.schemPointFromFramePos(mouse, location, GRIDSIZE);
-			int z = 3;
-			g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
+		g.setColor(new Color(0, 0, 0, 10));
+		// for (int i = 0; i < 5; i++) {
 
-			g.setFont(DEBUG_TEXT);
-			String focus = selectasset;
-			if (selecttype == 2)
-				focus = selectcolor;
-			g.drawString(
-					String.format(
-							"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s]",
-							mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
-							vertical_velocity, (int) selecttype, typing, focus),
-					20,
-					g.getFontMetrics().getAscent() + 20);
-
-			g.setStroke(new BasicStroke(6));
-			g.setColor(Color.BLUE);
-			g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
-					(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
-
-			if (selectstage == true) {
-				Point p1 = SchemUtilities.schemToLocalPoint(select_point_1, location, GRIDSIZE);
-				Point p2 = SchemUtilities.schemToLocalPoint(
-						SchemUtilities.schemPointFromFramePos(entry.peripherals.mousePos(), location, GRIDSIZE),
-						location, GRIDSIZE);
-				Rect r = new Rect(p1, p2);
-
-				if (selecttype == 0) {
-					g.setColor(Color.RED);
-					g.setStroke(new BasicStroke(4));
-					g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-				} else if (selecttype == 1) {
-					if (assets.containsKey(selectasset))
-						g.drawImage(assets.get(selectasset).getBaseAsset(), (int) r.getX(), (int) r.getY(),
-								(int) r.getWidth(),
-								(int) r.getHeight(), null);
-					else {
-						g.setColor(Color.RED);
-						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-					}
-				} else if (selecttype == 2) {
-					if (colors.containsKey(selectcolor)) {
-						g.setColor(colors.get(selectcolor));
-						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(),
-								(int) r.getHeight());
-					} else {
-						g.setColor(Color.RED);
-						g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-					}
-				}
-			}
-
-		}
-
-		if (typing) {
-			g.setFont(UI_TEXT);
-			g.setColor(Color.RED);
-			g.drawString(typing_str, 40, 40);
-		}
-
-		if (deathscreen) {
-			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
-		}
 		
 		Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
 				PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
 
-		int dist = 700;
-		double STEP = Math.PI / 24;
+		// 	Polygon light = new Polygon(
+		// 			new int[] { (int) center.x, (int) (center.x + angle_top.x), (int) (center.x + angle_bottom.x),
+		// 					(int) center.x },
+		// 			new int[] { (int) center.y, (int) (center.y + angle_top.y), (int) (center.y + angle_bottom.y),
+		// 					(int) center.y },
+		// 			4);
+
+		// 	g.fillPolygon(light);
+		// }
 		
-		//Polygon light = new Polygon(new int[] {(int)center.x, (int)(center.x+angle_top.x), (int)(center.x+angle_bottom.x), (int)center.x}, new int[] {(int)center.y, (int)(center.y+angle_top.y), (int)(center.y+angle_bottom.y), (int)center.y}, 4);
-		//Polygon box = new Polygon(new int[] {100, 400, 400, 100, 100}, new int[] {100, 100, 200, 200, 100}, 5);
+		double STEP = Math.PI / 12;
 
-		if (!DEBUG_) {
-			double diff1 = 0.008;
-			double fov = Math.PI / 12;
-			for (int i = 0; i < 30; i++) {
+		// Polygon light = new Polygon(
+		// 		new int[] { (int) center.x, (int) (center.x + angle_top.x), (int) (center.x + angle_bottom.x),
+		// 				(int) center.x },
+		// 		new int[] { (int) center.y, (int) (center.y + angle_top.y), (int) (center.y + angle_bottom.y),
+		// 				(int) center.y },
+		// 		4);
+		
+		for (int i = 0; i < 10; i++) {
+			
+			double dist = 600 + 10 * i;
+			int r = 120 + 8 * i;
+			Polygon circle = new Polygon();
+			double angle_diff = -0.08 * i;
+			double angle_diff2 = 0.06*i;
 
-				int r = 120 + 4 * i;
-				Polygon circle = new Polygon();
-				List<Polygon> polygons = new ArrayList<Polygon>();
-				double angle_diff = 0;//Math.atan2((3*i) , (dist));
+			double angle_1 = looking_angle - fov - angle_diff2;
+			double angle_2 = looking_angle + fov + angle_diff2;
+			circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
+					(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
+			circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_1 - angle_diff)),
+					(int) (center.y + (dist - (i * 4)) * Math.sin(angle_1 - angle_diff)));
+			circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_2 + angle_diff)),
+					(int) (center.y + (dist - (i * 4)) * Math.sin(angle_2 + angle_diff)));
+			circle.addPoint((int) (center.x + r * Math.cos(angle_2 + angle_diff)),
+					(int) (center.y + r * Math.sin(angle_2 + angle_diff)));
 
-				double angle_1 = looking_angle - fov + angle_diff;
-				double angle_2 = looking_angle + fov - angle_diff;
-				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - (i * diff1))),
-						(int) (center.y + r * Math.sin(angle_1 - (i * diff1))));
-				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_1 - (i * diff1))),
-						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_1 - (i * diff1))));
-				circle.addPoint((int) (center.x + (dist - (i * 4)) * Math.cos(angle_2 + (i * diff1))),
-						(int) (center.y + (dist - (i * 4)) * Math.sin(angle_2 + (i * diff1))));
-				circle.addPoint((int) (center.x + r * Math.cos(angle_2 + (i * diff1))),
-						(int) (center.y + r * Math.sin(angle_2 + (i * diff1))));
-
-				for (double a = angle_2; a + STEP < angle_1 - (i * diff1) + 2 * Math.PI; a += STEP) {
-					circle.addPoint((int) (center.x + r * Math.cos(a)),
-							(int) (center.y + r * Math.sin(a)));
-				}
-				circle.addPoint((int) (center.x + r * Math.cos(angle_1 - (i * diff1))),
-						(int) (center.y + r * Math.sin(angle_1 - (i * diff1))));
-
-				polygons.add(circle);
-
-				g.setColor(new Color(0, 0, 0, 24));
-				DrawUtil.DrawInvertedPolygon(polygons, g, this.getWidth(), this.getHeight());
+			for (double a = angle_2; a + STEP < angle_1 - angle_diff + 2 * Math.PI; a += STEP) {
+				circle.addPoint((int) (center.x + r * Math.cos(a)),
+						(int) (center.y + r * Math.sin(a)));
 			}
+			circle.addPoint((int) (center.x + r * Math.cos(angle_1 - angle_diff)),
+					(int) (center.y + r * Math.sin(angle_1 - angle_diff)));
+
+
+			g.setColor(new Color(0, 0, 0, 24));
+			g.fillPolygon(circle);
 		}
-
-		g.setColor(Color.RED);
-		g.fillRect(20, getHeight() - 60, 200, 10);
-		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
-		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
-
-		g.setStroke(new BasicStroke(2));
-		g.setColor(Color.BLACK);
-		g.drawRect(20, getHeight() - 60, 200, 10);
-		g.drawRect(20, getHeight() - 40, 200, 10);
-
-		g.setColor(Color.GREEN);
-		g.setStroke(new BasicStroke(2));
 	}
-	
+	/*
+	 * PAINT METHOD
+	 */
+
+	Rect LEVEL_SCREEN_SPACE;
+	VolatileImage raw_game = null;
+	VolatileImage light_mask = null;
+	BufferedImage display = null;
+
+	@Override
+	public void paint(Graphics g1) {
+		Graphics2D g = (Graphics2D) g1;
+
+		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+		g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+
+		Graphics2D g_raw = (Graphics2D) raw_game.getGraphics();
+		Graphics2D g_light = (Graphics2D) light_mask.getGraphics();
+		Graphics2D g_display = (Graphics2D) display.getGraphics();
+
+		
+		g_light.setBackground(new Color(0,0,0,0));
+		g_light.clearRect(0, 0, light_mask.getWidth(), light_mask.getHeight());
+
+		LEVEL_SCREEN_SPACE = new Rect(
+				Math.max(0, (TOPLEFT_BOUND.x) * GRIDSIZE - location.x),
+				Math.max(0, (TOPLEFT_BOUND.y) * GRIDSIZE - location.y),
+				MathUtil.min_(BOTTOMRIGHT_BOUND.x * GRIDSIZE - location.x,
+						getWidth() - TOPLEFT_BOUND.x * GRIDSIZE + location.x,
+						(BOTTOMRIGHT_BOUND.x - TOPLEFT_BOUND.x) * GRIDSIZE, getWidth()),
+				MathUtil.min_(BOTTOMRIGHT_BOUND.y * GRIDSIZE - location.y,
+						getHeight() - TOPLEFT_BOUND.y * GRIDSIZE + location.y,
+						(BOTTOMRIGHT_BOUND.y - TOPLEFT_BOUND.y) * GRIDSIZE, getHeight()));
+
+		// g.setColor(Color.WHITE);
+		// g.setStroke(new BasicStroke(2));
+		// g.fillRect(0, 0, this.getWidth(), this.getHeight());
+
+		RawGame(g_raw);
+		LightMask(g_light);
+
+		g.setBackground(new Color(0,0,0,255));
+		g.clearRect(0, 0, display.getWidth(), display.getHeight());
+		
+		AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.DST_IN);
+		BufferedImage light1 = light_mask.getSnapshot();
+		BufferedImage game1 = raw_game.getSnapshot();
+
+		CompositeContext context = ac.createContext(light1.getColorModel(), display.getColorModel(),
+				g.getRenderingHints());
+		context.compose(light1.getRaster(), game1.getRaster(), display.getRaster());
+				
+		g.drawImage(display, 0,0, null);
+
+		// if (DEBUG_) {
+		// 	for (ResetBox b : resetboxes) {
+		// 		Rect r = SchemUtilities.schemToLocal(b, location, GRIDSIZE);
+		// 		if (inScreenSpace(r))
+		// 			g.drawRect((int) Math.floor(r.getX()), (int) Math.floor(r.getY()), (int) Math.floor(r.getWidth()),
+		// 					(int) Math.floor(r.getHeight()));
+		// 	}
+
+		// 	g.setColor(Color.BLACK);
+		// 	Point mouse = entry.peripherals.mousePos();
+		// 	Point schem_mouse = SchemUtilities.schemPointFromFramePos(mouse, location, GRIDSIZE);
+		// 	int z = 3;
+		// 	g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
+
+		// 	g.setFont(DEBUG_TEXT);
+		// 	String focus = selectasset;
+		// 	if (selecttype == 2)
+		// 		focus = selectcolor;
+		// 	g.drawString(
+		// 			String.format(
+		// 					"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s]",
+		// 					mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
+		// 					vertical_velocity, (int) selecttype, typing, focus),
+		// 			20,
+		// 			g.getFontMetrics().getAscent() + 20);
+
+		// 	g.setStroke(new BasicStroke(6));
+		// 	g.setColor(Color.BLUE);
+		// 	g.drawRect((int) LEVEL_SCREEN_SPACE.getX(), (int) LEVEL_SCREEN_SPACE.getY(),
+		// 			(int) LEVEL_SCREEN_SPACE.getWidth(), (int) LEVEL_SCREEN_SPACE.getHeight());
+
+		// 	if (selectstage == true) {
+		// 		Point p1 = SchemUtilities.schemToLocalPoint(select_point_1, location, GRIDSIZE);
+		// 		Point p2 = SchemUtilities.schemToLocalPoint(
+		// 				SchemUtilities.schemPointFromFramePos(entry.peripherals.mousePos(), location, GRIDSIZE),
+		// 				location, GRIDSIZE);
+		// 		Rect r = new Rect(p1, p2);
+
+		// 		if (selecttype == 0) {
+		// 			g.setColor(Color.RED);
+		// 			g.setStroke(new BasicStroke(4));
+		// 			g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		// 		} else if (selecttype == 1) {
+		// 			if (assets.containsKey(selectasset))
+		// 				g.drawImage(assets.get(selectasset).getBaseAsset(), (int) r.getX(), (int) r.getY(),
+		// 						(int) r.getWidth(),
+		// 						(int) r.getHeight(), null);
+		// 			else {
+		// 				g.setColor(Color.RED);
+		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		// 			}
+		// 		} else if (selecttype == 2) {
+		// 			if (colors.containsKey(selectcolor)) {
+		// 				g.setColor(colors.get(selectcolor));
+		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(),
+		// 						(int) r.getHeight());
+		// 			} else {
+		// 				g.setColor(Color.RED);
+		// 				g.fillRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		// 			}
+		// 		}
+		// 	}
+
+		// }
+
+		// if (typing) {
+		// 	g.setFont(UI_TEXT);
+		// 	g.setColor(Color.RED);
+		// 	g.drawString(typing_str, 40, 40);
+		// }
+
+		// if (deathscreen) {
+		// 	ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
+		// }
+
+		// Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
+		// 		PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
+
+
+		
+		
+		// g.setColor(Color.RED);
+		// g.fillRect(20, getHeight() - 60, 200, 10);
+		// g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
+		// g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
+
+		// g.setStroke(new BasicStroke(2));
+		// g.setColor(Color.BLACK);
+		// g.drawRect(20, getHeight() - 60, 200, 10);
+		// g.drawRect(20, getHeight() - 40, 200, 10);
+
+		// g.setColor(Color.GREEN);
+		// g.setStroke(new BasicStroke(2));
+	}
+
 
 	/*
 	 * RESIZE EVENT
@@ -534,6 +593,18 @@ public class Application extends JPanel {
 		PLAYER_SCREEN_LOC = new Rect((width - PLAYER_WIDTH) / 2, (height + 0.0 * height - PLAYER_HEIGHT) / 2,
 				PLAYER_WIDTH,
 				PLAYER_HEIGHT);
+		//raw_game = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
+		//light_mask = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
+
+		display = new BufferedImage((int)width, (int)height, BufferedImage.TYPE_INT_ARGB);
+		
+		ImageCapabilities ic = new ImageCapabilities(true);
+		try {
+			raw_game = gconfig.createCompatibleVolatileImage((int) width, (int) height, ic, Transparency.TRANSLUCENT);
+			light_mask = gconfig.createCompatibleVolatileImage((int) width, (int) height, ic, Transparency.TRANSLUCENT);
+		} catch (AWTException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*

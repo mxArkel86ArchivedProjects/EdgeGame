@@ -1,11 +1,9 @@
 package util;
 
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImage;
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.image.*;
 import java.awt.geom.AffineTransform;
 import java.io.File;
+import java.awt.*;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -21,9 +19,44 @@ public class ImageImport {
 		return null;
 	}
 
-	public static BufferedImage resize(BufferedImage img, int newW, int newH) { 
+	public static VolatileImage getVolatileImage(String path, GraphicsConfiguration gc) {
+		try {
+			BufferedImage image = ImageIO.read(new File(path));
+
+			return toVolatile(image, gc);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static VolatileImage toVolatile(BufferedImage src, GraphicsConfiguration gc) {
+		try {
+			ImageCapabilities icap = new ImageCapabilities(false);
+			VolatileImage img = gc.createCompatibleVolatileImage(src.getWidth(), src.getHeight(), icap);
+			img.getGraphics().drawImage(src, 0, 0, null);
+			img.flush();
+			return img;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public static BufferedImage resize(BufferedImage img, int newW, int newH) {
 		Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_AREA_AVERAGING);
 		BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+
+		Graphics2D g2d = dimg.createGraphics();
+		g2d.drawImage(tmp, 0, 0, null);
+		g2d.dispose();
+
+		return dimg;
+	}
+	public static VolatileImage resizeV(VolatileImage img, GraphicsConfiguration gc, int newW, int newH) { 
+		Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_AREA_AVERAGING);
+		VolatileImage dimg = gc.createCompatibleVolatileImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
 	
 		Graphics2D g2d = dimg.createGraphics();
 		g2d.drawImage(tmp, 0, 0, null);
