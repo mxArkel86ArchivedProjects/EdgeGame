@@ -37,108 +37,43 @@ public class CollisionUtil {
 		boolean inline_y = left_intersect || right_intersect || center_intersect_x;
 		boolean inline_x = getY_intersect || bottom_intersect || center_intersect_y;
 
-		if (intent_x == 1 && intent_y == 1) {// quadrant I
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && a.getY() <= (b.getY()+b.getHeight()) && a.getY() + dy > (b.getY()+b.getHeight())) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil(a.getY() - (b.getY()+b.getHeight()));
-				
-			}
-			if ((inline_x || pass_by_y) && (a.getX()+a.getWidth()) <= b.getX() && (a.getX()+a.getWidth()) + dx > b.getX()) {
-				ret.x_collision = true;
-				ret.disp_x = Math.floor(b.getX() - (a.getX()+a.getWidth()));
-			}
-			return ret;
+		boolean collide_up = (inline_y || pass_by_x) && a.getY() >= (b.getY()+b.getHeight()) && a.getY() + dy < (b.getY()+b.getHeight());
+		boolean collide_right = (inline_x || pass_by_y) && (a.getX()+a.getWidth()) <= b.getX() && (a.getX()+a.getWidth()) + dx > b.getX();
+		boolean collide_left = (inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth());
+		boolean collide_bottom = (inline_y || pass_by_x) && (a.getY() + a.getHeight()) <= b.getY()
+				&& (a.getY() + a.getHeight()) - dy > b.getY();
+
+		
+		if(intent_x==1 && collide_right){
+			ret.x_collision = true;
+			ret.disp_x = Math.floor(b.getX() - (a.getX()+a.getWidth()));
 		}
-		else if (intent_x == 0 && intent_y == 1) {// y axis up
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && a.getY() <= (b.getY()+b.getHeight()) && a.getY() + dy > (b.getY()+b.getHeight())) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil(a.getY() - (b.getY()+b.getHeight()));
-			}
-			return ret;
+		if(intent_x==-1 && collide_left){
+			ret.x_collision = true;
+			ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
 		}
-		else if (intent_x == -1 && intent_y == 1) {// quadrant II
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && a.getY() <= (b.getY()+b.getHeight()) && a.getY() + dy > (b.getY()+b.getHeight())) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil(a.getY() - (b.getY()+b.getHeight()));
-			}
-			if ((inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth())) {
-				ret.x_collision = true;
-				ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
-			}
-			return ret;
+		if(intent_y==-1 && collide_bottom){
+			ret.y_collision = true;
+			ret.disp_y = Math.ceil((a.getY()+a.getHeight())-b.getY());
 		}
-		else if (intent_x == -1 && intent_y == 0) {// x axis left
-			// check if object is valid before move
-			if ((inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth())) {
-				ret.x_collision = true;
-				ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
-			}
-			return ret;
-		}
-		else if (intent_x == -1 && intent_y == -1) {// quadrant III
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && (a.getY()+a.getHeight()) <= b.getY() && (a.getY()+a.getHeight()) - dy > b.getY()) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil((a.getY()+a.getHeight()) - b.getY());
-			}
-			if ((inline_x || pass_by_y) && a.getX() >= (b.getX()+b.getWidth()) && a.getX() + dx < (b.getX()+b.getWidth())) {
-				ret.x_collision = true;
-				ret.disp_x = Math.ceil((b.getX()+b.getWidth()) - a.getX());
-			}
-			return ret;
-		}
-		else if (intent_x == 0 && intent_y == -1) {// y axis down
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && (a.getY()+a.getHeight()) <= b.getY() && (a.getY()+a.getHeight()) - dy > b.getY()) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil((a.getY()+a.getHeight())-b.getY());
-			}
-			return ret;
-		}
-		else if (intent_x == 1 && intent_y == -1) {// quadrant IV
-			// check if object is valid before move
-			if ((inline_y || pass_by_x) && (a.getY()+a.getHeight()) <= b.getY() && (a.getY()+a.getHeight()) - dy > b.getY()) {
-				ret.y_collision = true;
-				ret.disp_y = Math.ceil((a.getY()+a.getHeight()) - b.getY());
-			}
-			if ((inline_x || pass_by_y) && (a.getX()+a.getWidth()) <= b.getX() && (a.getX()+a.getWidth()) + dx > b.getX()) {
-				ret.x_collision = true;
-				ret.disp_x = Math.floor(b.getX() - (a.getX()+a.getWidth()));
-			}
-			return ret;
-		}
-		else if (intent_x == 1 && intent_y == 0) {// x axis right
-			// check if object is valid before move
-			if ((inline_x || pass_by_y) && (a.getX()+a.getWidth()) <= b.getX() && (a.getX()+a.getWidth()) + dx > b.getX()) {
-				ret.x_collision = true;
-				ret.disp_x = Math.floor(b.getX() - (a.getX()+a.getWidth()));
-			}
-			return ret;
+		if(intent_y==1 && collide_up){
+			ret.y_collision = true;
+			ret.disp_y = Math.ceil(a.getY() - (b.getY()+b.getHeight()));
 		}
 		return ret;
 	}
-	public static CollisionReturn DynamicCollision(Rect a, Rect b, double dx, double dy) {
-		// CollisionReturn retx = CollisionRaw(a, b, dx, 0);
-		// CollisionReturn rety = CollisionRaw(a, b, 0, dy);
 
-		// CollisionReturn ret = new CollisionReturn();
-		// ret.disp_x = retx.disp_x;
-		// ret.disp_y = rety.disp_y;
-		// ret.intent_x = retx.intent_x;
-		// ret.intent_y = rety.intent_y;
-		// ret.x_collision = retx.x_collision;
-		// ret.y_collision = rety.y_collision;
+	public static CollisionReturn DynamicCollision(Rect a, Rect b, double dx, double dy) {
 		return CollisionRaw(a, b, dx, dy);
 	}
 
 	public static boolean staticCollision(Rect a, Rect b) {
-		boolean inline_x = (a.getY() <= (b.getY()+b.getHeight()) && a.getY() >= b.getY())
-			|| ((a.getY()+a.getHeight()) <= (b.getY()+b.getHeight()) && (a.getY()+a.getHeight()) >= b.getY()) || (a.getY() <= b.getY() && (a.getY()+a.getHeight()) >= (b.getY()+b.getHeight()));
-		boolean inline_y = (a.getX() <= (b.getX()+b.getWidth()) && a.getX() >= b.getX())
-			|| ((a.getX()+a.getWidth()) <= (b.getX()+b.getWidth()) && (a.getX()+a.getWidth()) >= b.getX()) || (a.getX() <= b.getX() && (a.getX()+a.getWidth()) >= (b.getX()+b.getWidth()));
+		boolean inline_x = (a.getY() <= (b.getY() + b.getHeight()) && a.getY() >= b.getY())
+				|| ((a.getY() + a.getHeight()) <= (b.getY() + b.getHeight()) && (a.getY() + a.getHeight()) >= b.getY())
+				|| (a.getY() <= b.getY() && (a.getY() + a.getHeight()) >= (b.getY() + b.getHeight()));
+		boolean inline_y = (a.getX() <= (b.getX() + b.getWidth()) && a.getX() >= b.getX())
+				|| ((a.getX() + a.getWidth()) <= (b.getX() + b.getWidth()) && (a.getX() + a.getWidth()) >= b.getX())
+				|| (a.getX() <= b.getX() && (a.getX() + a.getWidth()) >= (b.getX() + b.getWidth()));
 		if (inline_x && inline_y) {
 			return true;
 		}
