@@ -30,6 +30,7 @@ import javax.swing.JPanel;
 
 import java.awt.*;
 
+import gameObjects.Bullet;
 import gameObjects.Collider;
 import gameObjects.ColorRect;
 import gameObjects.GameObject;
@@ -50,7 +51,7 @@ public class Application extends JPanel {
 	public List<ResetBox> resetboxes = new ArrayList<ResetBox>();
 	public List<GameObject> newObjects = new ArrayList<GameObject>();
 	public List<Collider> newColliders = new ArrayList<Collider>();
-	//public List<Bullet> bullets = new ArrayList<Bullet>();
+	public List<Bullet> bullets = new ArrayList<Bullet>();
 
 	/*
 	 * GAME ASSETS
@@ -343,11 +344,11 @@ public class Application extends JPanel {
 		g.drawImage(pimg, (int) PLAYER_SCREEN_LOC.x, (int) PLAYER_SCREEN_LOC.y, (int) PLAYER_SCREEN_LOC.width,
 				(int) PLAYER_SCREEN_LOC.height, null);
 
-		// for (Bullet b : bullets) {
-		// 	Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
-		// 	if (inScreenSpace(r))
-		// 		g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
-		// }
+		for (Bullet b : bullets) {
+			Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
+			if (inScreenSpace(r))
+				g.drawRect((int) r.getX(), (int) r.getY(), (int) r.getWidth(), (int) r.getHeight());
+		}
 
 		for (GameObject o : objects) {
 			if (Math.ceil(o.getZ()) > 0) {
@@ -388,10 +389,10 @@ public class Application extends JPanel {
 		double STEP = Math.PI / 12;
 
 		
-			for (int i = 1; i < 12; i++) {
+			for (int i = 1; i < 9; i++) {
 
 				double dist = 500 + 12*i;
-				double r = 120 + Math.exp(i*0.4);
+				double r = 120 + Math.exp(i*0.5);
 				Polygon circle = new Polygon();
 				double angle_diff = -0.07 * i;
 				double angle_diff2 = 0.06 * i;
@@ -634,18 +635,18 @@ public class Application extends JPanel {
 				levelUpdate();
 			}
 		} 
-		// else {
-		// 	System.out.println("Bullets");
-		// 	Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
-		// 			PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
-		// 	double angle = (Math.atan2(
-		// 			-pos.y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
-		// 			-pos.x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
-		// 	Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(angle),
-		// 			arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(angle));
-		// 	Bullet b = new Bullet(start.x, start.y, angle);
-		// 	bullets.add(b);
-		// }
+		else {
+			System.out.println("Bullets");
+			Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
+					PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
+			double angle = (Math.atan2(
+					-pos.y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
+					-pos.x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
+			Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(angle),
+					arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(angle));
+			Bullet b = new Bullet(start.x, start.y, angle);
+			bullets.add(b);
+		}
 	}
 
 	/*
@@ -819,10 +820,9 @@ public class Application extends JPanel {
 
 		double min_disp = Double.MAX_VALUE;
 
-		for (Collider c : colliders) {
-			Rect r = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
-
-			if (!CLIP) {
+		if (!CLIP) {
+			for (Collider c : colliders) {
+				Rect r = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
 
 				CollisionReturn ret = CollisionUtil.DynamicCollision(PLAYER_SCREEN_LOC, r, component_x, component_y);
 				if (ret.y_collision) {
@@ -838,22 +838,28 @@ public class Application extends JPanel {
 					component_x = 0;
 				}
 			}
-			// for (int i = 0; i < bullets.size(); i++) {
-			// 	Bullet b = bullets.get(i);
-			// 	Rect r2 = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
-			// 	double dx = Globals.BULLET_SPEED * Math.cos(b.getAngle());
-			// 	double dy = Globals.BULLET_SPEED * Math.sin(b.getAngle());
-			// 	CollisionReturn ret2 = CollisionUtil.DynamicCollision(r2, r, dx, -dy);
-			// 	double dist = Math
-			// 			.sqrt(Math.pow(b.x - PLAYER_SCREEN_LOC.x, 2) + Math.pow(b.y - PLAYER_SCREEN_LOC.y, 2));
-			// 	if (ret2.x_collision || ret2.y_collision || dist > Globals.BULLET_MAX_DISTANCE * GRIDSIZE) {
-			// 		bullets.remove(i);
-			// 		i--;
-			// 	} else {
-			// 		b.x += dx;
-			// 		b.y += dy;
-			// 	}
-			// }
+		}
+
+		for (Collider c : colliders) {
+			Rect collider = SchemUtilities.schemToLocal(c, location, GRIDSIZE);
+
+			for (int i = 0; i < bullets.size(); i++) {
+				Bullet b = bullets.get(i);
+				Rect bullet = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
+				double dx = Globals.BULLET_SPEED * Math.cos(b.getAngle());
+				double dy = Globals.BULLET_SPEED * Math.sin(b.getAngle());
+				boolean ret = CollisionUtil.staticCollision(bullet, collider);
+
+				
+				if (ret || Math.sqrt(Math.pow(bullet.x, 2) + Math.pow(bullet.y, 2)) > 4000) {
+					bullets.remove(i);
+					i--;
+				} else {
+					b.x += dx;
+					b.y += dy;
+				}
+			}
+
 		}
 
 		if (grounded) {
