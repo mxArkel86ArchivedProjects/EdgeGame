@@ -1,8 +1,8 @@
 package main;
 
 public class Globals {
-	public static final double PLAYER_WIDTH = 70;
-	public static final double PLAYER_HEIGHT = 140;
+	public static final double PLAYER_WIDTH = 80;
+	public static final double PLAYER_HEIGHT = 160;
 	public static final double PLAYER_SPEED = 5;
 	public static final double DROP_SPEED = 10;
 	public static final double DEBUG_PLAYER_SPEED = 8;
