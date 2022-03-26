@@ -1,6 +1,10 @@
 package main;
 
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
 import java.util.Timer;
 
 import javax.swing.JFrame;
@@ -29,18 +33,17 @@ public static long tick = 0;
 		
 		app.Init(w, h);
 		
-		//System.setProperty("sun.java2d.opengl", "true");
+		System.setProperty("sun.java2d.opengl", "true");
 		
-		// t.scheduleAtFixedRate(new TimerTask() {
+				// Transparent 16 x 16 pixel cursor image.
+		BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 
-		// 	@Override
-		// 	public void run() {
-		// 		tick++;
-		// 		app.onTick(tick);
-				
-		// 	}
-			
-		// }, 0, 10);
+		// Create a new blank cursor.
+		Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
+			cursorImg, new Point(0, 0), "blank cursor");
+
+		// Set the blank cursor to the JFrame.
+		frame.getContentPane().setCursor(blankCursor);
 
 		System.setProperty("sun.java2d.opengl", "true");
 		

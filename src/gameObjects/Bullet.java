@@ -4,15 +4,14 @@ import main.Globals;
 import util.Rect;
 
 public class Bullet extends Rect {
-    double angle;
+    public double angle;
+    public double speed;
 
-    public Bullet(double x, double y, double angle) {
-        super(x-Globals.BULLET_SIZE/2, y-Globals.BULLET_SIZE/2, Globals.BULLET_SIZE, Globals.BULLET_SIZE);
+    public Bullet(double x, double y, double size, double angle, double speed) {
+        super(x-size/2, y-size/2, size, size);
         this.angle = angle;
+        this.speed = speed;
     }
 
-    public double getAngle(){
-        return angle;
-    }
     
 }

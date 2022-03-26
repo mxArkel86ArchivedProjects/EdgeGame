@@ -20,6 +20,7 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 	Point MOUSE_POS = new Point(0,0);
 	String typed_str = "";
 	boolean type_enable = false;
+	public boolean mouse_state = false;
 	
 	
 //	public Controller[] getControllers() {
@@ -144,12 +145,12 @@ public class Peripherals implements ComponentListener, KeyListener, MouseInputLi
 	public void mousePressed(MouseEvent e) {
 		Point pos = new Point(e.getX(), e.getY());
 		entry.app.mouseClick(pos);
+		mouse_state = true;
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
+		mouse_state = false;
 	}
 
 	@Override
