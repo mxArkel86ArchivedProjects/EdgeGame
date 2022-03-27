@@ -6,6 +6,7 @@ import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
 
+
 import util.Rect;
 import util.SchemUtilities;
 import util.ScreenAnimation;
@@ -97,7 +98,7 @@ public class Application extends JPanel {
 	int intent_y = 0;
 	boolean sprint = false;
 	double looking_angle = 0;
-	Weapon weapon = ItemAttributes.DevTek_Rifle();
+	Weapon weapon = ItemAttributes.WISP();
 	long last_fire_tick = 0;
 
 	/*
@@ -365,6 +366,14 @@ public class Application extends JPanel {
 		g.drawImage(pimg, (int) PLAYER_SCREEN_LOC.x, (int) PLAYER_SCREEN_LOC.y, (int) PLAYER_SCREEN_LOC.width,
 				(int) PLAYER_SCREEN_LOC.height, null);
 
+		Gun gun = (Gun) weapon;
+		Point arm = new Point(PLAYER_SCREEN_LOC.x+PLAYER_WIDTH / 2,
+				PLAYER_SCREEN_LOC.y+PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
+		Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(looking_angle),
+				arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(looking_angle));
+				BufferedImage baseimg = assets.get(gun.ASSET_NAME()).getBaseAsset();
+		g.drawImage(baseimg, (int) (start.x-25), (int) (start.y-25), 50,50, null);
+
 		for (Bullet b : bullets) {
 			Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
 			if (inScreenSpace(r))
@@ -410,7 +419,6 @@ public class Application extends JPanel {
 
 		Area shape = new Area();
 		Polygon circle = new Polygon();
-		
 		{
 			Point center = new Point(PLAYER_SCREEN_LOC.x + PLAYER_SCREEN_LOC.width / 2,
 					PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height / 2);
@@ -590,7 +598,7 @@ public class Application extends JPanel {
 	Rect LEVEL_SCREEN_SPACE;
 	VolatileImage raw_game = null;
 	VolatileImage light_mask = null;
-	BufferedImage display = null;
+	VolatileImage dark_mask = null;
 
 	@Override
 	public void paint(Graphics g1) {
@@ -604,11 +612,16 @@ public class Application extends JPanel {
 
 		Graphics2D g_raw = (Graphics2D) raw_game.getGraphics();
 		Graphics2D g_light = (Graphics2D) light_mask.getGraphics();
-		Graphics2D g_display = (Graphics2D) display.getGraphics();
+		Graphics2D g_dark = (Graphics2D) dark_mask.getGraphics();
 
-		
-		g_raw.setBackground(new Color(0, 0, 0));
-		g_raw.clearRect(0, 0, raw_game.getWidth(), raw_game.getHeight());
+		g.setBackground(Color.BLACK);
+		g.clearRect(0, 0, raw_game.getWidth(), raw_game.getHeight());
+
+		g_light.setBackground(new Color(0, 0, 0, 0));
+		g_light.clearRect(0, 0, raw_game.getWidth(), raw_game.getHeight());
+
+		g_dark.setBackground(new Color(0, 0, 0, 0));
+		g_dark.clearRect(0, 0, raw_game.getWidth(), raw_game.getHeight());
 
 		LEVEL_SCREEN_SPACE = new Rect(
 				Math.max(0, (TOPLEFT_BOUND.x) * GRIDSIZE - location.x),
@@ -620,13 +633,29 @@ public class Application extends JPanel {
 						getHeight() - TOPLEFT_BOUND.y * GRIDSIZE + location.y,
 						(BOTTOMRIGHT_BOUND.y - TOPLEFT_BOUND.y) * GRIDSIZE, getHeight()));
 
-		if (!DEBUG_)
-			g_raw.setClip(LightMask(g_raw));
-		else
-			g_raw.setClip(0, 0, raw_game.getWidth(), raw_game.getHeight());
-		RawGame(g_raw);
+		Shape shape = LightMask(g_raw);
+		Area inv = new Area(new Rectangle(0, 0, raw_game.getWidth(), raw_game.getHeight()));
+		inv.subtract(new Area(shape));
 		
-		g.drawImage(raw_game, 0, 0, null);
+		RawGame(g_raw);
+
+		if (!DEBUG_) {
+
+			g_light.setClip(shape);
+			g_dark.setClip(inv);
+
+			g_light.drawImage(raw_game, 0, 0, null);
+			g_dark.drawImage(raw_game, 0, 0, null);
+
+			g_dark.setColor(new Color(0, 0, 0, 230));
+			g_dark.fillRect(0, 0, dark_mask.getWidth(), dark_mask.getHeight());
+			g.drawImage(dark_mask, 0, 0, null);
+			g.drawImage(light_mask, 0, 0, null);
+
+		} else {
+			g.drawImage(raw_game, 0, 0, null);
+		}
+		
 		drawUI(g);
 	}
 
@@ -642,12 +671,11 @@ public class Application extends JPanel {
 		
 		
 
-		display = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
-
 		ImageCapabilities ic = new ImageCapabilities(true);
 		try {
 			raw_game = gconfig.createCompatibleVolatileImage((int) width, (int) height, ic, Transparency.TRANSLUCENT);
 			light_mask = gconfig.createCompatibleVolatileImage((int) width, (int) height, ic, Transparency.TRANSLUCENT);
+			dark_mask = gconfig.createCompatibleVolatileImage((int) width, (int) height, ic, Transparency.TRANSLUCENT);
 		} catch (AWTException e) {
 			e.printStackTrace();
 		}
@@ -707,17 +735,14 @@ public class Application extends JPanel {
 		Point pos = entry.peripherals.mousePos();
 
 		if (g.MAG_TYPE() != g.mag.NAME()) {
-			System.out.println("WRONG MAG INSERTED");
+			System.out.println(String.format("WRONG MAG INSERTED [%s] [%s]", g.MAG_TYPE(), g.mag.NAME()));
 		}
 
 		Point arm = new Point(PLAYER_SCREEN_LOC.x + location.x + PLAYER_WIDTH / 2,
 				PLAYER_SCREEN_LOC.y + location.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
-		double angle = (Math.atan2(
-				-pos.y + PLAYER_SCREEN_LOC.y + PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP,
-				-pos.x + PLAYER_SCREEN_LOC.x + PLAYER_WIDTH / 2)) % (2 * Math.PI) + Math.PI;
-		Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(angle),
-				arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(angle));
-		Bullet b = new Bullet(start.x, start.y, g.BULLET_SIZE(), angle, g.mag.BULLET_INITIAL_SPEED());
+		Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(looking_angle),
+				arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(looking_angle));
+		Bullet b = new Bullet(start.x, start.y, g.BULLET_SIZE(), looking_angle, g.mag.BULLET_INITIAL_SPEED());
 		bullets.add(b);
 
 		last_fire_tick = entry.tick;
@@ -876,7 +901,7 @@ public class Application extends JPanel {
 			}
 
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_U)) {
-				((Gun) weapon).mag = ItemAttributes.DevTek_Mag();
+				((Gun) weapon).mag = ItemAttributes.WISP_MAG();
 			}
 		}
 	}

@@ -4,8 +4,10 @@ public abstract class Gun extends Weapon {
     public Magazine mag;
 
     Gun() {
-        
+
     }
+
+    public abstract String ASSET_NAME();
 
     public abstract double DAMAGE();
 

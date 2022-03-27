@@ -15,7 +15,7 @@ public class ItemAttributes {
 
             @Override
             public String MAG_TYPE() {
-                return "WISP_MAG";
+                return "WISP MAG";
             }
 
             @Override
@@ -36,6 +36,11 @@ public class ItemAttributes {
             @Override
             public int BULLET_SIZE() {
                 return 15;
+            }
+
+            @Override
+            public String ASSET_NAME() {
+                return "wisp";
             }
 
         };
@@ -77,6 +82,11 @@ public class ItemAttributes {
             @Override
             public int BULLET_SIZE() {
                 return 20;
+            }
+
+            @Override
+            public String ASSET_NAME() {
+                return "devtek";
             }
 
         };
@@ -138,6 +148,11 @@ public class ItemAttributes {
             @Override
             public int BULLET_SIZE() {
                 return 40;
+            }
+
+            @Override
+            public String ASSET_NAME() {
+                return "thunder";
             }
 
         };

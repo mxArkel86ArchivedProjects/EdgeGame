@@ -29,6 +29,23 @@ public class ImageImport {
 		}
 		return null;
 	}
+
+	public static BufferedImage BlurImage(BufferedImage in) {
+		int radius = 2;
+		int size = radius * 2 + 1;
+		float weight = 1.0f / (size * size);
+		float[] data = new float[size * size];
+	
+		for (int i = 0; i < data.length; i++) {
+			data[i] = weight;
+		}
+	
+		Kernel kernel = new Kernel(size, size, data);
+		ConvolveOp op = new ConvolveOp(kernel, ConvolveOp.EDGE_ZERO_FILL, null);
+		//tbi is BufferedImage
+		BufferedImage i = op.filter(in, null);
+		return i;
+	}
 	
 	public static VolatileImage toVolatile(BufferedImage src, GraphicsConfiguration gc) {
 		try {
