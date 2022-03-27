@@ -1,4 +1,4 @@
-package util;
+package util.templates;
 
 public class Size {
     public double width;

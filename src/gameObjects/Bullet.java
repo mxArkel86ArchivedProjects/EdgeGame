@@ -1,7 +1,7 @@
 package gameObjects;
 
 import main.Globals;
-import util.Rect;
+import util.templates.Rect;
 
 public class Bullet extends Rect {
     public double angle;

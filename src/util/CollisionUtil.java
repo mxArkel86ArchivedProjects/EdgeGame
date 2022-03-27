@@ -1,5 +1,9 @@
 package util;
 
+import util.templates.CollisionReturn;
+import util.templates.Point;
+import util.templates.Rect;
+
 public class CollisionUtil {
 	private static CollisionReturn CollisionRaw(Rect a, Rect b, double dx, double dy){
 		CollisionReturn ret = new CollisionReturn();

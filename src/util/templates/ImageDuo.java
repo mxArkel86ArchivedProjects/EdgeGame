@@ -1,4 +1,4 @@
-package util;
+package util.templates;
 
 import java.awt.image.BufferedImage;
 

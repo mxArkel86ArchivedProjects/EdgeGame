@@ -19,7 +19,8 @@ public class Globals {
 	public static final double SPRINT_MULT = 1.4;
 	public static final double ARM_VERTICAL_DISP = 0.4;
 	public static final double BULLET_DEFAULT_DISTANCE = 60;
-	public static final double BULLET_MAX_DISTANCE = 80;
+	public static final double GUN_DEFAULT_DISTANCE = 50;
+	public static final double BULLET_MAX_DISTANCE = 90;
 	public static final int EXTRA_JUMPS = 3;
 	public static final int DASH_COUNT = 2;
 	public static final double DASH_STEP = 20;

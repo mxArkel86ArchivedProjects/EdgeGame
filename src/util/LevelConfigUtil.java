@@ -13,6 +13,7 @@ import gameObjects.GameObject;
 import gameObjects.LevelProp;
 import gameObjects.ResetBox;
 import main.entry;
+import util.templates.Point;
 
 public class LevelConfigUtil {
     public static void saveLevel(){

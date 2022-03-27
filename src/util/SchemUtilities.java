@@ -1,5 +1,8 @@
 package util;
 
+import util.templates.Point;
+import util.templates.Rect;
+
 public class SchemUtilities {
 
     public static Point schemToLocalPoint(Point r, Point location, double GRIDSIZE) {

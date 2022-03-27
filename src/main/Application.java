@@ -6,20 +6,21 @@ import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
 
-
-import util.Rect;
 import util.SchemUtilities;
 import util.ScreenAnimation;
-import util.Size;
-import util.AssetSet;
-import util.CollisionReturn;
+import util.templates.AssetSet;
+import util.templates.CollisionReturn;
+import util.templates.ImageDuo;
+import util.templates.Point;
+import util.templates.Rect;
+import util.templates.RotateReturn;
+import util.templates.Size;
 import util.CollisionUtil;
 import util.LevelConfigUtil;
 import util.MathUtil;
 import util.DrawUtil;
-import util.ImageDuo;
 import util.ImageImport;
-import util.Point;
+
 import java.awt.geom.*;
 
 import java.awt.event.KeyEvent;
@@ -98,7 +99,7 @@ public class Application extends JPanel {
 	int intent_y = 0;
 	boolean sprint = false;
 	double looking_angle = 0;
-	Weapon weapon = ItemAttributes.WISP();
+	Weapon weapon = ItemAttributes.THUNDER();
 	long last_fire_tick = 0;
 
 	/*
@@ -134,8 +135,9 @@ public class Application extends JPanel {
 
 	GraphicsConfiguration gconfig = null;
 
-	List<Double> debug_vals = Arrays.asList(0.0, 0.0, 0.0);
+	List<Double> debug_vals = Arrays.asList(0.0);
 	int select_val = 0;
+	boolean show_darkness = false;
 
 	/*
 	 * INIT METHOD
@@ -149,12 +151,12 @@ public class Application extends JPanel {
 
 		ImageDuo duo1 = new ImageDuo();
 		duo1.img1 = resizeToGrid(ImageImport.getImage("assets/playermodel_0.png"), PLAYER_WIDTH, PLAYER_HEIGHT);
-		duo1.img2 = ImageImport.flippedImage(duo1.img1);
+		duo1.img2 = ImageImport.flippedImage(duo1.img1, true);
 		anim_set.add(duo1);
 
 		ImageDuo duo2 = new ImageDuo();
 		duo2.img1 = resizeToGrid(ImageImport.getImage("assets/playermodel_1.png"), PLAYER_WIDTH, PLAYER_HEIGHT);
-		duo2.img2 = ImageImport.flippedImage(duo2.img1);
+		duo2.img2 = ImageImport.flippedImage(duo2.img1, true);
 		anim_set.add(duo2);
 
 		try {
@@ -369,10 +371,14 @@ public class Application extends JPanel {
 		Gun gun = (Gun) weapon;
 		Point arm = new Point(PLAYER_SCREEN_LOC.x+PLAYER_WIDTH / 2,
 				PLAYER_SCREEN_LOC.y+PLAYER_SCREEN_LOC.height * Globals.ARM_VERTICAL_DISP);
-		Point start = new Point(arm.x + Globals.BULLET_DEFAULT_DISTANCE * Math.cos(looking_angle),
-				arm.y + Globals.BULLET_DEFAULT_DISTANCE * Math.sin(looking_angle));
-				BufferedImage baseimg = assets.get(gun.ASSET_NAME()).getBaseAsset();
-		g.drawImage(baseimg, (int) (start.x-25), (int) (start.y-25), 50,50, null);
+		Point start = new Point(arm.x + Globals.GUN_DEFAULT_DISTANCE * Math.cos(looking_angle),
+				arm.y + Globals.GUN_DEFAULT_DISTANCE * Math.sin(looking_angle));
+		BufferedImage baseimg = (BufferedImage)assets.get(gun.ASSET_NAME()).getCachedSize(50,50);
+		if (looking_angle > Math.PI / 2 && looking_angle <= 3 * Math.PI / 2) {
+			baseimg = ImageImport.flippedImage(baseimg, false);
+		}
+		RotateReturn rotret = ImageImport.rotate(baseimg, looking_angle);
+		g.drawImage(rotret.out, (int) (start.x-25+rotret.offsetX()), (int) (start.y-25+rotret.offsetY()), null);
 
 		for (Bullet b : bullets) {
 			Rect r = new Rect(b.x - location.x, b.y - location.y, b.width, b.height);
@@ -405,7 +411,6 @@ public class Application extends JPanel {
 					paintLevelProp(g, (LevelProp) o);
 			}
 		}
-
 	}
 
 	private Shape LightMask(Graphics2D g) {
@@ -642,21 +647,27 @@ public class Application extends JPanel {
 		if (!DEBUG_) {
 
 			g_light.setClip(shape);
-			g_dark.setClip(inv);
-
 			g_light.drawImage(raw_game, 0, 0, null);
-			g_dark.drawImage(raw_game, 0, 0, null);
+			
+			if (show_darkness) {
+				g_dark.setClip(inv);
+				g_dark.drawImage(raw_game, 0, 0, null);
+				g_dark.setColor(new Color(0, 0, 0, 230));
+				g_dark.fillRect(0, 0, dark_mask.getWidth(), dark_mask.getHeight());
+			}
+			
+			
 
-			g_dark.setColor(new Color(0, 0, 0, 230));
-			g_dark.fillRect(0, 0, dark_mask.getWidth(), dark_mask.getHeight());
+			if(show_darkness)
 			g.drawImage(dark_mask, 0, 0, null);
 			g.drawImage(light_mask, 0, 0, null);
 
 		} else {
 			g.drawImage(raw_game, 0, 0, null);
 		}
-		
+
 		drawUI(g);
+		
 	}
 
 	/*
@@ -901,7 +912,7 @@ public class Application extends JPanel {
 			}
 
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_U)) {
-				((Gun) weapon).mag = ItemAttributes.WISP_MAG();
+				((Gun) weapon).mag = ItemAttributes.THUNDER_MAG();
 			}
 		}
 	}

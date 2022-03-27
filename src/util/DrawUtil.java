@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import util.templates.Rect;
+
 public class DrawUtil {
 	public static void DrawRect(Graphics2D g, Rect r, Color c) {
 		g.setColor(c);

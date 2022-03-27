@@ -45,7 +45,7 @@ public static long tick = 0;
 		// Set the blank cursor to the JFrame.
 		frame.getContentPane().setCursor(blankCursor);
 
-		System.setProperty("sun.java2d.opengl", "true");
+		//System.setProperty("sun.java2d.opengl", "true");
 		
 		frame.addComponentListener(peripherals);
 		frame.addKeyListener(peripherals);

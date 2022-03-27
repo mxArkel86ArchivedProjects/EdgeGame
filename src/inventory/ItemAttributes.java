@@ -152,7 +152,7 @@ public class ItemAttributes {
 
             @Override
             public String ASSET_NAME() {
-                return "thunder";
+                return "thundergun";
             }
 
         };

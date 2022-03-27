@@ -1,6 +1,6 @@
 package gameObjects;
 
-import util.Rect;
+import util.templates.Rect;
 
 public class Collider extends Rect {
 	boolean visible;

@@ -1,4 +1,4 @@
-package util;
+package util.templates;
 
 public class CollisionReturn {
 	public int intent_x;

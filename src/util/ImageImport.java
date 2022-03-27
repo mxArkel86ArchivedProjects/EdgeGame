@@ -8,6 +8,9 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import util.templates.Rect;
+import util.templates.RotateReturn;
+
 public class ImageImport {
 	public static BufferedImage getImage(String path) {
 		try {
@@ -30,8 +33,27 @@ public class ImageImport {
 		return null;
 	}
 
-	public static BufferedImage BlurImage(BufferedImage in) {
-		int radius = 2;
+	public static RotateReturn rotate(BufferedImage img, double angle)
+	{
+        double sin = Math.abs(Math.sin(angle)), cos = Math.abs(Math.cos(angle));
+        int w = img.getWidth(), h = img.getHeight();
+        int neww = (int) Math.floor(w * cos + h * sin), newh = (int) Math.floor(h * cos + w * sin);
+        BufferedImage result = new BufferedImage(neww, newh, Transparency.TRANSLUCENT);
+        Graphics2D g = result.createGraphics();
+        g.translate((neww - w) / 2, (newh - h) / 2);
+        g.rotate(angle, w / 2, h / 2);
+        g.drawRenderedImage(img, null);
+		g.dispose();
+		
+		RotateReturn ret = new RotateReturn();
+		ret.angle = angle;
+		ret.newsize = new Rect(0, 0, neww, newh);
+		ret.oldsize = new Rect(0, 0, img.getWidth(), img.getHeight());
+		ret.out = result;
+        return ret;
+	}
+	
+	public static BufferedImage BlurImage(BufferedImage in, int radius) {
 		int size = radius * 2 + 1;
 		float weight = 1.0f / (size * size);
 		float[] data = new float[size * size];
@@ -82,12 +104,20 @@ public class ImageImport {
 		return dimg;
 	}
 
-	public static BufferedImage flippedImage(BufferedImage img) {
+	public static BufferedImage flippedImage(BufferedImage img, boolean horizontal) {
 		// Flip the image horizontally
-		AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
-		tx.translate(-img.getWidth(null), 0);
-		AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-		img = op.filter(img, null);
-		return img;
+		if (horizontal) {
+			AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
+			tx.translate(-img.getWidth(null), 0);
+			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+			img = op.filter(img, null);
+			return img;
+		} else {
+			AffineTransform ty = AffineTransform.getScaleInstance(1, -1);
+			ty.translate(0, -img.getHeight(null));
+			AffineTransformOp op = new AffineTransformOp(ty, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+			img = op.filter(img, null);
+			return img;
+		}
 	}  
 }

@@ -1,13 +1,15 @@
-package util;
+package util.templates;
 
 import java.util.HashMap;
 
 import main.Globals;
+import util.ImageImport;
 
 import java.awt.image.BufferedImage;
 
 public class AssetSet {
     private HashMap<Size, BufferedImage> assets = new HashMap<>();
+    private HashMap<Size, BufferedImage> cachedSizes = new HashMap<>();
     
     BufferedImage base = null;
     public AssetSet(BufferedImage img) {
@@ -37,5 +39,17 @@ public class AssetSet {
 
     public BufferedImage getBaseAsset() {
         return base;
+    }
+
+    public BufferedImage getCachedSize(int w, int h) {
+        for (Size s : cachedSizes.keySet()) {
+            if (s.width == w && s.height == h) {
+                BufferedImage img = cachedSizes.get(s);
+                return img;
+            }
+        }
+        BufferedImage newimg = ImageImport.resize(base, w, h);
+        cachedSizes.put(new Size(w, h), newimg);
+        return newimg;
     }
 }

@@ -5,12 +5,7 @@ import java.util.*;
 
 import javax.swing.event.MouseInputListener;
 
-//import net.java.games.input.Component;
-//import net.java.games.input.Controller;
-//import net.java.games.input.ControllerEnvironment;
-//import net.java.games.input.Event;
-//import net.java.games.input.EventQueue;
-import util.Point;
+import util.templates.Point;
 
 
 public class Peripherals implements ComponentListener, KeyListener, MouseInputListener {

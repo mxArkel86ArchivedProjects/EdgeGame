@@ -1,4 +1,4 @@
-package util;
+package util.templates;
 
 public class Point {
 	public double x;
