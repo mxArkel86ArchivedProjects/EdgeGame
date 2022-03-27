@@ -3,5 +3,6 @@
 [collision]
 
 [levelprop]
+lamp,37,20,40,23,0.000
 
 [colorrect]

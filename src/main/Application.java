@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.awt.image.ColorModel;
 import java.io.File;
+import java.io.IOException;
 
 import util.Rect;
 import util.SchemUtilities;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.JPanel;
+import javax.swing.text.AttributeSet.FontAttribute;
 
 import java.awt.*;
 
@@ -40,7 +42,6 @@ import gameObjects.LevelProp;
 import gameObjects.ResetBox;
 import inventory.Gun;
 import inventory.ItemAttributes;
-import inventory.Magazine;
 import inventory.Weapon;
 
 public class Application extends JPanel {
@@ -69,8 +70,8 @@ public class Application extends JPanel {
 	/*
 	 * GRAPHICS OBJECTS
 	 */
-	Font DEBUG_TEXT = new Font("Arial", Font.PLAIN, 12);
-	Font UI_TEXT = new Font("Arial", Font.PLAIN, 28);
+	Font DEBUG_TEXT = null;
+	Font UI_TEXT = null;
 
 	/*
 	 * GAME CONSTANTS
@@ -113,7 +114,7 @@ public class Application extends JPanel {
 	 */
 	boolean deathscreen = false;
 	boolean selectstage = false;
-	boolean typing = false;
+	boolean typing_enabled = false;
 	String typing_str = "";
 
 	/*
@@ -145,7 +146,6 @@ public class Application extends JPanel {
 
 		onResize(width, height);
 
-
 		ImageDuo duo1 = new ImageDuo();
 		duo1.img1 = resizeToGrid(ImageImport.getImage("assets/playermodel_0.png"), PLAYER_WIDTH, PLAYER_HEIGHT);
 		duo1.img2 = ImageImport.flippedImage(duo1.img1);
@@ -156,7 +156,16 @@ public class Application extends JPanel {
 		duo2.img2 = ImageImport.flippedImage(duo2.img1);
 		anim_set.add(duo2);
 
-		
+		try {
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("Oswald-VariableFont.ttf")));
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("Arimo-VariableFont.ttf")));
+		} catch (IOException | FontFormatException e) {
+			//Handle exception
+		}
+	   
+		UI_TEXT = new Font("Oswald VariableFont", Font.BOLD, 26);
+		DEBUG_TEXT = new Font("Arimo-VariableFont", Font.PLAIN, 14);
+
 		LevelConfigUtil.loadLevel();
 
 		HashMap<String, List<Size>> sizes = new HashMap<>();
@@ -214,7 +223,7 @@ public class Application extends JPanel {
 	 * BACKEND GAME CODE
 	 */
 	public void onTick() {
-		inputUpdate(true, typing, (!animation && !typing));
+		inputUpdate(true, typing_enabled, (!animation && !typing_enabled));
 		if(entry.peripherals.mouse_state)
 			mouseDown(entry.peripherals.mousePos());
 
@@ -223,7 +232,7 @@ public class Application extends JPanel {
 		if (deathscreen)
 			return;
 
-		if (typing) {
+		if (typing_enabled) {
 			if (entry.peripherals.keysTypedB()) {
 				typing_str += entry.peripherals.keysTyped();
 			}
@@ -391,13 +400,13 @@ public class Application extends JPanel {
 	}
 
 	private Shape LightMask(Graphics2D g) {
-		double fov = 0.6;
+		double fov = 0.7;
 		double dx = 360 * Math.cos(looking_angle);
 		double dy = 360 * Math.sin(looking_angle);
-		double STEP = Math.PI / 24;
-		double dist = 520;
+		double STEP = 0.05;
+		double dist = 800;
 		double r = 200;
-		double lamp_dist = 140;
+		double lamp_dist = 150;
 
 		Area shape = new Area();
 		Polygon circle = new Polygon();
@@ -460,7 +469,7 @@ public class Application extends JPanel {
 		Point mouse = entry.peripherals.mousePos();
 		Point schem_mouse = SchemUtilities.schemPointFromFramePos(mouse, location, GRIDSIZE);
 		int z = 3;
-		g.fillOval((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
+		g.fillRect((int) mouse.x - z, (int) mouse.y - z, 2 * z, 2 * z);
 
 		g.setFont(DEBUG_TEXT);
 		String focus = selectasset;
@@ -470,7 +479,7 @@ public class Application extends JPanel {
 				String.format(
 						"raw=(%5.1f,%5.1f)  coord=(%5.1f,%5.1f) grounded=%b velocity=%3.1f stype=%d typing=%b focus=[%s] select_val=%d debug_val=[%s]",
 						mouse.x, mouse.y, schem_mouse.x, schem_mouse.y, grounded,
-						vertical_velocity, (int) selecttype, typing, focus, select_val, debug_vals.toString()),
+						vertical_velocity, (int) selecttype, typing_enabled, focus, select_val, debug_vals.toString()),
 				20,
 				g.getFontMetrics().getAscent() + 20);
 
@@ -511,7 +520,7 @@ public class Application extends JPanel {
 			}
 		}
 
-		if (typing) {
+		if (typing_enabled) {
 			g.setFont(UI_TEXT);
 			g.setColor(Color.RED);
 			g.drawString(typing_str, 40, 40);
@@ -521,32 +530,54 @@ public class Application extends JPanel {
 			ScreenAnimation.DeathScreen_Graphics(g, animation_tick, this.getWidth(), this.getHeight());
 		}
 
+		int bar_height = 18;
+		int bar_width = 250;
 		g.setColor(Color.RED);
-		g.fillRect(20, getHeight() - 60, 200, 10);
+		g.fillRect(20, getHeight() - 40-bar_height-14, bar_width, bar_height);
 		g.setColor(new Color(255, (int) (100 + (120) * sprint_val), 0));
-		g.fillRect(20, getHeight() - 40, (int) (200 * sprint_val), 10);
+		g.fillRect(20, getHeight() - 20-bar_height, (int) (bar_width * sprint_val), bar_height);
 
-		g.setStroke(new BasicStroke(2));
-		g.setColor(Color.BLACK);
-		g.drawRect(20, getHeight() - 60, 200, 10);
-		g.drawRect(20, getHeight() - 40, 200, 10);
+		g.setStroke(new BasicStroke(3));
+		g.setColor(new Color(30,30,30));
+		g.drawRect(20, getHeight() - 40-bar_height-14, bar_width, bar_height);
+		g.drawRect(20, getHeight() - 20-bar_height, bar_width, bar_height);
 
-		g.setColor(Color.WHITE);
-		g.setFont(UI_TEXT);
+		
 
+		
 		Gun gun = (Gun) weapon;
+		g.setFont(UI_TEXT);
+		String bullet_str = null;
 		if (gun.mag != null) {
-			String bullet_str = String.format("%d/%d", gun.mag.bullet_count, gun.mag.BULLET_MAX());
-			g.drawString(bullet_str,
-					(int) (-g.getFontMetrics().getStringBounds(bullet_str, g).getWidth() + this.getWidth() - 20),
-					(int) (-g.getFontMetrics().getAscent() - 20 + this.getHeight()));
+			bullet_str = String.format("%d/%d", gun.mag.bullet_count, gun.mag.BULLET_MAX());
+		}else{
+			bullet_str = "0/0";
 		}
+			
+
+			Rectangle2D txt_bounds = g.getFontMetrics(UI_TEXT).getStringBounds(bullet_str, g);
+			Rect txt = new Rect(this.getWidth()-txt_bounds.getWidth() - 40,
+					this.getHeight() - txt_bounds.getHeight() - 40,
+					txt_bounds.getWidth(), txt_bounds.getHeight()+10);
+
+			int buffer_lr = 10;
+			int buffer_tb = 8;
+			int corners = 16;
+			g.setColor(new Color(30,30,30,160));
+			g.fillRoundRect((int)(txt.x-buffer_lr), (int)(txt.y-buffer_tb), (int)(txt.getWidth()+2*buffer_lr), (int)(txt.getHeight()+2*buffer_tb), corners, corners);
+
+			g.setColor(Color.WHITE);
+			
+			g.drawString(bullet_str,
+					(int) txt.x,
+					(int) (txt.y+txt_bounds.getHeight()));
+		
 
 		g.setColor(Color.WHITE);
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(3));
 		Point mousepos = entry.peripherals.mousePos();
 		if (entry.tick - last_fire_tick < gun.FIRING_DELAY()) {
-			int size1 = 14;
+			int size1 = 16;
 			double percent = ((entry.tick - last_fire_tick) * 1.0f / gun.FIRING_DELAY());
 			g.drawArc((int) mousepos.x - size1, (int) mousepos.y - size1, 2 * size1, 2 * size1, 0,
 					(int) (360 * percent));
@@ -565,9 +596,11 @@ public class Application extends JPanel {
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D) g1;
 
-		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 		g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+		g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		Graphics2D g_raw = (Graphics2D) raw_game.getGraphics();
 		Graphics2D g_light = (Graphics2D) light_mask.getGraphics();
@@ -622,12 +655,14 @@ public class Application extends JPanel {
 
 
 	public void mouseDown(Point pos) {
-		Gun g = (Gun) weapon;
-			if (g.FIRING_TYPE()==1 && g.mag != null) {
+		if (!DEBUG_) {
+			Gun g = (Gun) weapon;
+			if (g.FIRING_TYPE() == 1 && g.mag != null) {
 				if (entry.tick - last_fire_tick > g.FIRING_DELAY()) {
 					FireBullet();
 				}
 			}
+		}
 	}
 	/*
 	 * MOUSE CLICK EVENT
@@ -648,10 +683,10 @@ public class Application extends JPanel {
 					Collider c = new Collider(r.getX(), r.getY(), r.getWidth(), r.getHeight(), true);
 					newColliders.add(c);
 				} else if (selecttype == 1) {
-					LevelProp c = new LevelProp(r.getX(), r.getY(), r.getWidth(), r.getHeight(), 1.001f, selectasset);
+					LevelProp c = new LevelProp(r.getX(), r.getY(), r.getWidth(), r.getHeight(), 0f, selectasset);
 					newObjects.add(c);
 				} else if (selecttype == 2) {
-					ColorRect c = new ColorRect(r.getX(), r.getY(), r.getWidth(), r.getHeight(), 1.001f, selectcolor);
+					ColorRect c = new ColorRect(r.getX(), r.getY(), r.getWidth(), r.getHeight(), 0f, selectcolor);
 					newObjects.add(c);
 				}
 				levelUpdate();
@@ -694,7 +729,7 @@ public class Application extends JPanel {
 	 * INPUT MANAGEMENT
 	 * Set local variables and toggles based on peripheral inputs
 	 */
-	void inputUpdate(boolean essentials, boolean typing, boolean game) {
+	void inputUpdate(boolean essentials, boolean typing_en, boolean game) {
 		
 		if (essentials) {
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_O)) {
@@ -740,19 +775,18 @@ public class Application extends JPanel {
 				double val = debug_vals.get(select_val);
 				debug_vals.set(select_val, val - 0.04);
 			}
+			if (entry.peripherals.KeyToggled(KeyEvent.VK_RIGHT)) {
+				this.typing_enabled = !this.typing_enabled;
+				if (!this.typing_enabled)
+					typing_str = "";
+				entry.peripherals.typingEnable(this.typing_enabled);
+			}
 		}
 		
-		if (typing) {
-			if (entry.peripherals.KeyToggled(KeyEvent.VK_ALT)) {
-				typing = !typing;
-				if (!typing)
-					typing_str = "";
-				entry.peripherals.typingEnable(typing);
-			}
-
+		if (typing_en) {
 			if (entry.peripherals.KeyToggled(KeyEvent.VK_ENTER)) {
-				if (typing && typing_str.length() > 0) {
-					typing = false;
+				if (typing_enabled && typing_str.length() > 0) {
+					typing_enabled = false;
 					typing_str = typing_str.strip();
 					if (selecttype == 1) {
 						selectasset = typing_str;
@@ -763,8 +797,8 @@ public class Application extends JPanel {
 					entry.peripherals.typingEnable(false);
 				}
 			}
-			if (entry.peripherals.KeyPressed(KeyEvent.VK_CONTROL)) {
-				if (typing && typing_str.length() > 0) {
+			if (entry.peripherals.KeyPressed(KeyEvent.VK_BACK_SPACE)) {
+				if (typing_enabled && typing_str.length() > 0) {
 					typing_str = typing_str.substring(0, typing_str.length() - 1);
 				}
 			}

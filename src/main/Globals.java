@@ -7,7 +7,7 @@ public class Globals {
 	public static final double DROP_SPEED = 10;
 	public static final double DEBUG_PLAYER_SPEED = 8;
 	public static final double GRIDSIZE = 30;
-	public static final double DEBUG_SCALE = 2;
+	public static final double DEBUG_SCALE = 1.5;
 	public static final double REFRESH_RATE = 60;
 	public static final int INITIAL_HEIGHT = 900;
 	public static final int INITIAL_WIDTH = 1600;
